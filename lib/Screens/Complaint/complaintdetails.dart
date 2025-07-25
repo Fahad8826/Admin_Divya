@@ -9,107 +9,114 @@ class ComplaintDetailPage extends StatelessWidget {
 
   const ComplaintDetailPage({super.key, required this.complaintData});
 
+  // Define a consistent and professional color palette
+  static const Color _primaryColor = Color(
+    0xFFD13443,
+  ); // A solid red for primary accents
+  static const Color _accentColor = Color(
+    0xFFD32F2F,
+  ); // A strong red for warnings/high priority
+  static const Color _textColor = Color(
+    0xFF212121,
+  ); // Very dark grey for main text
+  static const Color _lightTextColor = Color(
+    0xFF616161,
+  ); // Medium grey for labels and secondary text
+  static const Color _cardColor =
+      Colors.white; // Pure white for card backgrounds
+  static const Color _backgroundColor = Color(
+    0xFFF0F2F5,
+  ); // Light off-white for scaffold background
+  static const Color _dividerColor = Color(
+    0xFFE0E0E0,
+  ); // Consistent divider color
+  static const Color _successColor = Colors.green; // For 'resolved' status
+  static const Color _warningColor = Colors.orange; // For 'in-progress' status
+  static const Color _infoColor = Colors.blue; // For 'pending' status
+
   @override
   Widget build(BuildContext context) {
     // Initialize GetX controller
     final controller = Get.put(ComplaintDetailController());
     controller.initializeData(complaintData);
 
+    // Get screen width for responsive adjustments
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double horizontalPadding = screenWidth * 0.04; // 4% of screen width
+    final double cardPadding = screenWidth * 0.05; // 5% of screen width
+    final double titleFontSize = screenWidth * 0.055; // Adjust title font size
+    final double bodyFontSize = screenWidth * 0.038; // Adjust body font size
+    final double smallFontSize =
+        screenWidth * 0.03; // Adjust small text font size
+
     return Scaffold(
-      // AppBar with title and refresh action
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        title: const Text('Complaint Details'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
+        title: Text(
+          'Complaint Details',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize:
+                screenWidth * 0.045, // Smaller app bar title on smaller screens
+            color: _textColor,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: _cardColor,
+        foregroundColor: _textColor,
+        elevation: 2,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
+          color: _textColor,
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            // Refresh the UI using GetX's rebuild mechanism
+            icon: const Icon(
+              Icons.refresh_outlined,
+              size: 20,
+              color: _textColor,
+            ),
             onPressed: () => controller.update(),
           ),
         ],
       ),
-      // SingleChildScrollView for scrollable content
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildComplaintDetailsCard(controller, context),
-            const SizedBox(height: 16),
-            _buildResponseSection(controller, context),
-            const SizedBox(height: 16),
-            _buildPreviousResponses(controller, context),
-          ],
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: 16.0,
         ),
-      ),
-    );
-  }
-
-  // Widget to display complaint details in a card
-  Widget _buildComplaintDetailsCard(
-    ComplaintDetailController controller,
-    context,
-  ) {
-    // Format timestamp for display
-    final createdAt = complaintData['timestamp'] != null
-        ? DateFormat(
-            'dd MMM yyyy, hh:mm a',
-          ).format((complaintData['timestamp'] as Timestamp).toDate())
-        : 'N/A';
-
-    final priority = complaintData['priority'] ?? 1;
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Complaint Details',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                ),
-                _buildPriorityChip(priority),
-              ],
+            // Complaint Overview Card
+            _buildOverviewCard(
+              controller,
+              context,
+              cardPadding,
+              titleFontSize,
+              bodyFontSize,
+              smallFontSize,
             ),
-            const Divider(height: 24),
-            _buildDetailRow('ID', complaintData['complaintId'] ?? 'N/A'),
-            _buildDetailRow('Category', complaintData['category'] ?? 'N/A'),
-            _buildDetailRow('Customer Name', complaintData['name'] ?? 'N/A'),
-            _buildDetailRow('Email', complaintData['email'] ?? 'N/A'),
-            _buildDetailRow(
-              'User Role',
-              complaintData['userRole'] ?? 'Unknown',
-            ),
-            _buildDetailRow('Created At', createdAt),
             const SizedBox(height: 16),
-            const Text(
-              'Complaint Description:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            // Response Input Section
+            _buildResponseSection(
+              controller,
+              context,
+              cardPadding,
+              titleFontSize,
+              bodyFontSize,
+              smallFontSize,
             ),
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Text(
-                complaintData['complaint'] ?? 'N/A',
-                style: const TextStyle(fontSize: 14, height: 1.5),
-              ),
+            const SizedBox(height: 16),
+            // Timeline of Responses/Updates
+            _buildTimelineSection(
+              controller,
+              context,
+              cardPadding,
+              titleFontSize,
+              bodyFontSize,
+              smallFontSize,
             ),
           ],
         ),
@@ -117,109 +124,285 @@ class ComplaintDetailPage extends StatelessWidget {
     );
   }
 
-  // Widget to display a detail row with label and value
-  Widget _buildDetailRow(String label, String value) {
+  // --- Helper Widgets for Consistent Design ---
+
+  Widget _buildSectionTitle(String title, double fontSize, {Color? color}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+          color: color ?? _textColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRowWithIcon(
+    String label,
+    String value,
+    IconData icon,
+    double bodyFontSize,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(
+            icon,
+            size: bodyFontSize * 1.3,
+            color: _lightTextColor,
+          ), // Icon size relative to body font
+          const SizedBox(width: 12),
           SizedBox(
-            width: 120,
+            width: 90, // Slightly reduced fixed width for labels
             child: Text(
               '$label:',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: _lightTextColor,
+                fontSize: bodyFontSize,
               ),
             ),
           ),
           Expanded(
-            child: Text(value, style: TextStyle(color: Colors.grey.shade700)),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: bodyFontSize,
+                color: _textColor,
+                fontWeight: FontWeight.w400,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Widget to display priority chip based on priority level
-  Widget _buildPriorityChip(int priority) {
+  // Widget to display priority as a pill
+  Widget _buildPriorityPill(int priority, double smallFontSize) {
     Color color;
     String text;
 
     switch (priority) {
       case 1:
-        color = Colors.green;
-        text = 'Low Priority';
+        color = _successColor;
+        text = 'LOW';
         break;
       case 2:
-        color = Colors.orange;
-        text = 'Medium Priority';
+        color = _warningColor;
+        text = 'MEDIUM';
         break;
       case 3:
-        color = Colors.red;
-        text = 'High Priority';
+        color = _accentColor;
+        text = 'HIGH';
         break;
       default:
-        color = Colors.grey;
-        text = 'Unknown Priority';
+        color = Colors.grey.shade500;
+        text = 'UNKNOWN';
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ), // Reduced padding
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
-        text,
+        '$text PRIORITY',
         style: TextStyle(
           color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
+          fontSize: smallFontSize * 0.9, // Even smaller font for the pill
         ),
       ),
     );
   }
 
-  // Widget to display response input section
-  Widget _buildResponseSection(ComplaintDetailController controller, context) {
+  // Widget for complaint overview
+  Widget _buildOverviewCard(
+    ComplaintDetailController controller,
+    BuildContext context,
+    double cardPadding,
+    double titleFontSize,
+    double bodyFontSize,
+    double smallFontSize,
+  ) {
+    final createdAt = complaintData['timestamp'] != null
+        ? DateFormat(
+            'MMM dd, yyyy, hh:mm a',
+          ).format((complaintData['timestamp'] as Timestamp).toDate())
+        : 'N/A';
+    final priority = complaintData['priority'] ?? 1;
+
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: _cardColor,
+      elevation: 5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    complaintData['name'] ?? 'Unknown Customer',
+                    style: TextStyle(
+                      fontSize:
+                          titleFontSize *
+                          0.9, // Slightly smaller than main title
+                      fontWeight: FontWeight.bold,
+                      color: _textColor,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _buildPriorityPill(priority, smallFontSize),
+              ],
+            ),
+            const SizedBox(height: 8),
             Text(
-              'Add Response',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.green.shade700,
+              'Complaint ID: ${complaintData['complaintId'] ?? 'N/A'}',
+              style: TextStyle(
+                fontSize: smallFontSize,
+                color: _lightTextColor,
+                fontWeight: FontWeight.w500,
               ),
             ),
+            const Divider(height: 32, thickness: 1, color: _dividerColor),
+            _buildDetailRowWithIcon(
+              'Category',
+              complaintData['category'] ?? 'N/A',
+              Icons.category_outlined,
+              bodyFontSize,
+            ),
+            _buildDetailRowWithIcon(
+              'Email',
+              complaintData['email'] ?? 'N/A',
+              Icons.email_outlined,
+              bodyFontSize,
+            ),
+            _buildDetailRowWithIcon(
+              'User Role',
+              complaintData['userRole'] ?? 'Unknown',
+              Icons.assignment_ind_outlined,
+              bodyFontSize,
+            ),
+            _buildDetailRowWithIcon(
+              'Created At',
+              createdAt,
+              Icons.event_note_outlined,
+              bodyFontSize,
+            ),
             const SizedBox(height: 16),
-            // Status dropdown with reactive state
+            _buildSectionTitle('Complaint Description', bodyFontSize * 1.1),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(
+                bodyFontSize,
+              ), // Padding relative to body font size
+              decoration: BoxDecoration(
+                color: _backgroundColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Text(
+                complaintData['complaint'] ?? 'No description provided.',
+                style: TextStyle(
+                  fontSize: bodyFontSize,
+                  color: _textColor,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget for response input section
+  Widget _buildResponseSection(
+    ComplaintDetailController controller,
+    BuildContext context,
+    double cardPadding,
+    double titleFontSize,
+    double bodyFontSize,
+    double smallFontSize,
+  ) {
+    return Card(
+      color: _cardColor,
+      elevation: 5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
+        padding: EdgeInsets.all(cardPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle(
+              'Add Response',
+              titleFontSize * 0.9,
+              color: _primaryColor,
+            ),
+            const Divider(height: 24, thickness: 1, color: _dividerColor),
+            const SizedBox(height: 12),
             Obx(
               () => DropdownButtonFormField<String>(
                 value: controller.selectedStatus.value,
                 decoration: InputDecoration(
                   labelText: 'Update Status',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  labelStyle: TextStyle(
+                    color: _lightTextColor,
+                    fontSize: bodyFontSize,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 16,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                      color: _primaryColor,
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: bodyFontSize,
+                    vertical: bodyFontSize,
                   ),
                 ),
                 items: ['pending', 'in-progress', 'resolved']
                     .map(
                       (status) => DropdownMenuItem(
                         value: status,
-                        child: Text(status.toUpperCase()),
+                        child: Text(
+                          status.toUpperCase(),
+                          style: TextStyle(
+                            color: _getStatusTextColor(status),
+                            fontWeight: FontWeight.w500,
+                            fontSize: bodyFontSize,
+                          ),
+                        ),
                       ),
                     )
                     .toList(),
@@ -227,21 +410,37 @@ class ComplaintDetailPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            // Response text field
             TextField(
               controller: controller.responseController,
               maxLines: 4,
               decoration: InputDecoration(
                 labelText: 'Response Message',
-                hintText: 'Enter your response to this complaint...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                labelStyle: TextStyle(
+                  color: _lightTextColor,
+                  fontSize: bodyFontSize,
                 ),
-                contentPadding: const EdgeInsets.all(16),
+                hintText: 'Enter your response to this complaint...',
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: bodyFontSize,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: _primaryColor, width: 2),
+                ),
+                contentPadding: EdgeInsets.all(bodyFontSize),
               ),
+              style: TextStyle(color: _textColor, fontSize: bodyFontSize),
             ),
-            const SizedBox(height: 16),
-            // Submit button with loading state
+            const SizedBox(height: 24),
             Obx(
               () => SizedBox(
                 width: double.infinity,
@@ -250,12 +449,15 @@ class ComplaintDetailPage extends StatelessWidget {
                       ? null
                       : controller.submitResponse,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade600,
+                    backgroundColor: _primaryColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(
+                      vertical: bodyFontSize + 4,
+                    ), // Adjusted padding
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
+                    elevation: 3,
                   ),
                   child: controller.isLoading.value
                       ? const SizedBox(
@@ -266,10 +468,10 @@ class ComplaintDetailPage extends StatelessWidget {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Submit Response',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: bodyFontSize,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -282,28 +484,31 @@ class ComplaintDetailPage extends StatelessWidget {
     );
   }
 
-  // Widget to display previous responses from Firestore
-  Widget _buildPreviousResponses(
+  // Widget for previous responses/timeline section
+  Widget _buildTimelineSection(
     ComplaintDetailController controller,
-    context,
+    BuildContext context,
+    double cardPadding,
+    double titleFontSize,
+    double bodyFontSize,
+    double smallFontSize,
   ) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: _cardColor,
+      elevation: 5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            _buildSectionTitle(
               'Response History',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.purple.shade700,
-              ),
+              titleFontSize * 0.9,
+              color: Colors.blue.shade700,
             ),
-            const SizedBox(height: 16),
-            // StreamBuilder to fetch and display responses in real-time
+            const Divider(height: 24, thickness: 1, color: _dividerColor),
+            const SizedBox(height: 12),
             StreamBuilder<QuerySnapshot>(
               stream: controller.firestore
                   .collection('complaint_responses')
@@ -312,89 +517,160 @@ class ComplaintDetailPage extends StatelessWidget {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: CircularProgressIndicator(color: _primaryColor),
+                    ),
+                  );
                 }
-
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20.0),
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(color: _accentColor),
+                      ),
+                    ),
+                  );
+                }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Text(
-                    'No responses yet.',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontStyle: FontStyle.italic,
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: Text(
+                        'No responses yet.',
+                        style: TextStyle(
+                          color: _lightTextColor,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ),
                   );
                 }
 
-                return Column(
-                  children: snapshot.data!.docs.map((doc) {
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, index) {
+                    final doc = snapshot.data!.docs[index];
                     final data = doc.data() as Map<String, dynamic>;
                     final timestamp = data['timestamp'] != null
                         ? DateFormat(
-                            'dd MMM yyyy, hh:mm a',
+                            'MMM dd, yyyy, hh:mm a',
                           ).format((data['timestamp'] as Timestamp).toDate())
                         : 'N/A';
+                    final newStatus = data['newStatus']?.toString() ?? 'N/A';
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade100),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.admin_panel_settings,
-                                size: 16,
-                                color: Colors.blue.shade600,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Admin Response', // Display user ID
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue.shade700,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                timestamp,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            data['response'] ?? 'No response text',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          if (data['statusChanged'] == true) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'Status updated to: ${data['newStatus']?.toUpperCase() ?? 'N/A'}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                    return _buildTimelineEntry(
+                      context,
+                      timestamp,
+                      data['response'] ?? 'No response text',
+                      newStatus,
+                      bodyFontSize,
+                      smallFontSize,
                     );
-                  }).toList(),
+                  },
                 );
               },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Helper for status text color in dropdown
+  Color _getStatusTextColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return _infoColor;
+      case 'in-progress':
+        return _warningColor;
+      case 'resolved':
+        return _successColor;
+      default:
+        return _textColor;
+    }
+  }
+
+  // A new widget to represent a single timeline entry
+  Widget _buildTimelineEntry(
+    BuildContext context,
+    String timestamp,
+    String responseText,
+    String newStatus,
+    double bodyFontSize,
+    double smallFontSize,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.all(
+        bodyFontSize,
+      ), // Padding relative to body font size
+      decoration: BoxDecoration(
+        color: _backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.history_toggle_off_outlined,
+                size: bodyFontSize * 1.2,
+                color: _primaryColor,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                timestamp,
+                style: TextStyle(
+                  fontSize: smallFontSize,
+                  color: _lightTextColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              if (newStatus != 'N/A')
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ), // Reduced padding
+                  decoration: BoxDecoration(
+                    color: _getStatusTextColor(newStatus).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: _getStatusTextColor(newStatus).withOpacity(0.3),
+                    ),
+                  ),
+                  child: Text(
+                    newStatus.toUpperCase(),
+                    style: TextStyle(
+                      fontSize:
+                          smallFontSize *
+                          0.9, // Even smaller font for status chip
+                      fontWeight: FontWeight.w600,
+                      color: _getStatusTextColor(newStatus),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            responseText,
+            style: TextStyle(
+              fontSize: bodyFontSize,
+              color: _textColor,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }

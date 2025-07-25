@@ -28,7 +28,11 @@ class OrderReport extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Order Reports',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: Color(0xFF1A1A1A),
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,

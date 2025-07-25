@@ -1,374 +1,347 @@
-// import 'package:admin/Auth/sigin.dart';
-// import 'package:admin/Controller/sign_up_controller.dart';
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
+import 'package:admin/Auth/sigin.dart';
+import 'package:admin/Controller/sign_up_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import for TextInputFormatter
+import 'package:get/get.dart';
 
-// class Signup extends StatelessWidget {
-//   final SignupController controller = Get.put(SignupController());
+class Signup extends StatelessWidget {
+  final SignupController controller = Get.put(SignupController());
 
-//   Signup({super.key});
+  Signup({super.key});
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final screenHeight = MediaQuery.of(context).size.height;
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
 
-//     return WillPopScope(
-//       onWillPop: () async {
-//         Get.off(() => Signin());
-//         return false;
-//       },
-//       child: Scaffold(
-//         resizeToAvoidBottomInset: true,
-//         body: SingleChildScrollView(
-//           child: SizedBox(
-//             height: screenHeight,
-//             child: Stack(
-//               children: [
-//                 // Round image
-//                 Positioned(
-//                   right: screenHeight * -0.15,
-//                   top: -screenHeight * 0.1,
-//                   child: SizedBox(
-//                     height: MediaQuery.of(context).size.height * 0.3,
-//                     width: MediaQuery.of(context).size.height * 0.3,
-//                     child: Image.asset(
-//                       'assets/images/round.png',
-//                       fit: BoxFit.contain,
-//                     ),
-//                   ),
-//                 ),
+    return WillPopScope(
+      onWillPop: () async {
+        Get.off(() => Signin());
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: screenHeight - MediaQuery.of(context).padding.top,
+              ),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet
+                        ? screenWidth * 0.1
+                        : 16.0, // Reduced horizontal padding
+                    vertical: 10.0, // Reduced vertical padding
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Top spacing
+                      SizedBox(
+                        height: screenHeight * 0.05,
+                      ), // Smaller top spacing
+                      // Logo/Brand section (Adjusted for smaller size)
+                      _buildLogoSection(context, isTablet),
 
-//                 // Top image
-//                 Positioned(
-//                   top: screenHeight * 0.02,
-//                   left: 0,
-//                   right: 0,
-//                   child: SizedBox(
-//                     height: MediaQuery.of(context).size.height * 0.33,
-//                     width: MediaQuery.of(context).size.width * 0.33,
-//                     child: Image.asset(
-//                       'assets/images/Signup_top.png',
-//                       fit: BoxFit.contain,
-//                     ),
-//                   ),
-//                 ),
+                      SizedBox(height: screenHeight * 0.02), // Reduced spacing
+                      // Welcome text section
+                      _buildWelcomeSection(context),
 
-//                 // icon button image
-//                 Positioned(
-//                   left: -screenHeight * 0.05,
-//                   top: -screenHeight * 0.09,
-//                   child: TextButton(
-//                     onPressed: () {
-//                       Navigator.push(
-//                         context,
-//                         MaterialPageRoute(builder: (context) => Signup()),
-//                       );
-//                     },
-//                     child: SizedBox(
-//                       height: MediaQuery.of(context).size.height * 0.4,
-//                       width: MediaQuery.of(context).size.width * 0.4,
-//                       child: Image.asset(
-//                         'assets/images/icon button.png',
-//                         fit: BoxFit.contain,
-//                       ),
-//                     ),
-//                   ),
-//                 ),
+                      SizedBox(height: screenHeight * 0.03), // Reduced spacing
+                      // Form section for signup fields
+                      _buildFormSection(controller, context),
 
-//                 //Welcome text
-//                 Positioned(
-//                   top: screenHeight * .27,
-//                   left: screenHeight * .04,
-//                   right: screenHeight * .04,
-//                   child: Text(
-//                     "LET'S GET STARTED",
-//                     style: TextStyle(
-//                       fontSize: 30,
-//                       fontWeight: FontWeight.bold,
-//                       color: Color(0xFF030047),
-//                     ),
-//                     textAlign: TextAlign.center,
-//                   ),
-//                 ),
+                      SizedBox(height: screenHeight * 0.03), // Reduced spacing
+                      // Sign up button
+                      _buildSignUpButton(controller),
 
-//                 // Sign up text
-//                 Positioned(
-//                   top: screenHeight * .31,
-//                   left: screenHeight * .04,
-//                   right: screenHeight * .04,
-//                   child: Text(
-//                     'SIGN UP',
-//                     style: TextStyle(
-//                       fontSize: 25,
-//                       color: Color.fromARGB(255, 63, 97, 209),
-//                     ),
-//                     textAlign: TextAlign.center,
-//                   ),
-//                 ),
+                      SizedBox(height: screenHeight * 0.03), // Reduced spacing
+                      // Login link
+                      _buildLoginLink(context),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-//                 // Email text field
-//                 Positioned(
-//                   top: screenHeight * .39,
-//                   left: screenHeight * .04,
-//                   right: screenHeight * .04,
-//                   child: TextField(
-//                     controller: controller.emailController,
-//                     decoration: InputDecoration(
-//                       suffixIcon: Icon(
-//                         Icons.email_outlined,
-//                         color: Color(0xFF030047),
-//                       ),
-//                       labelText: 'Email',
-//                       labelStyle: TextStyle(
-//                         color: Color.fromARGB(255, 193, 204, 240),
-//                       ),
-//                       enabledBorder: OutlineInputBorder(
-//                         borderRadius: BorderRadius.circular(30),
-//                         borderSide: BorderSide(
-//                           color: Colors.transparent,
-//                           width: 2,
-//                         ),
-//                       ),
-//                       focusedBorder: OutlineInputBorder(
-//                         borderRadius: BorderRadius.circular(30),
-//                         borderSide: BorderSide(
-//                           color: Color(0xFF030047),
-//                           width: 2,
-//                         ),
-//                       ),
-//                       filled: true,
-//                       fillColor: Color(0xFFE1E5F2),
-//                       contentPadding: EdgeInsets.symmetric(
-//                         horizontal: 20,
-//                         vertical: 15,
-//                       ),
-//                     ),
-//                     style: TextStyle(fontSize: 18),
-//                     keyboardType: TextInputType.emailAddress,
-//                   ),
-//                 ),
+  /// Builds the logo/brand section.
+  Widget _buildLogoSection(BuildContext context, bool isTablet) {
+    return Center(
+      child: Container(
+        // Minimized size for the logo container
+        width: isTablet ? 150 : 120, // Smaller width
+        height: isTablet ? 200 : 130, // Smaller height
+        child: Image.asset(
+          'assets/images/logo.png', // Assuming you have a 'logo.png' in your assets
+          fit: BoxFit.contain,
+          // Image dimensions are implicitly controlled by the container's size
+          alignment: Alignment.center,
+        ),
+      ),
+    );
+  }
 
-//                 // Phone number text field
-//                 Positioned(
-//                   top: screenHeight * .47,
-//                   left: screenHeight * .04,
-//                   right: screenHeight * .04,
-//                   child: TextField(
-//                     controller: controller.phoneController,
-//                     decoration: InputDecoration(
-//                       suffixIcon: Icon(
-//                         Icons.phone_outlined,
-//                         color: Color(0xFF030047),
-//                       ),
-//                       labelText: 'Phone Number',
-//                       labelStyle: TextStyle(
-//                         color: Color.fromARGB(255, 193, 204, 240),
-//                       ),
-//                       enabledBorder: OutlineInputBorder(
-//                         borderRadius: BorderRadius.circular(30),
-//                         borderSide: BorderSide(
-//                           color: Colors.transparent,
-//                           width: 2,
-//                         ),
-//                       ),
-//                       focusedBorder: OutlineInputBorder(
-//                         borderRadius: BorderRadius.circular(30),
-//                         borderSide: BorderSide(
-//                           color: Color(0xFF030047),
-//                           width: 2,
-//                         ),
-//                       ),
-//                       filled: true,
-//                       fillColor: Color(0xFFE1E5F2),
-//                       contentPadding: EdgeInsets.symmetric(
-//                         horizontal: 20,
-//                         vertical: 15,
-//                       ),
-//                     ),
-//                     style: TextStyle(fontSize: 18),
-//                     keyboardType: TextInputType.phone,
-//                   ),
-//                 ),
+  /// Builds the welcome text section.
+  Widget _buildWelcomeSection(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          "LET'S GET STARTED",
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF030047),
+            fontSize: 28, // Slightly reduced font size
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 6), // Reduced spacing
+        Text(
+          'Create your account to get started',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Colors.grey.shade600,
+            fontSize: 14, // Slightly reduced font size
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
 
-//                 //respositioned bottom image
-//                 Positioned(
-//                   bottom: -screenHeight * .17,
-//                   left: screenHeight * -.001,
-//                   right: 0,
-//                   child: SizedBox(
-//                     height: MediaQuery.of(context).size.height * 0.6,
-//                     width: MediaQuery.of(context).size.width,
-//                     child: Image.asset(
-//                       'assets/images/bottom.png',
-//                       fit: BoxFit.cover,
-//                     ),
-//                   ),
-//                 ),
-//                 // Password text field
-//                 Positioned(
-//                   top: screenHeight * .55,
-//                   left: screenHeight * .04,
-//                   right: screenHeight * .04,
-//                   child: Obx(
-//                     () => TextField(
-//                       controller: controller.passwordController,
-//                       obscureText: !controller.isPasswordVisible.value,
-//                       decoration: InputDecoration(
-//                         suffixIcon: IconButton(
-//                           icon: Icon(
-//                             controller.isPasswordVisible.value
-//                                 ? Icons.visibility_outlined
-//                                 : Icons.visibility_off_outlined,
-//                             color: Color(0xFF030047),
-//                           ),
-//                           onPressed: controller.togglePasswordVisibility,
-//                         ),
-//                         labelText: 'Password',
-//                         labelStyle: TextStyle(
-//                           color: Color.fromARGB(255, 193, 204, 240),
-//                         ),
-//                         enabledBorder: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(30),
-//                           borderSide: BorderSide(
-//                             color: Colors.transparent,
-//                             width: 2,
-//                           ),
-//                         ),
-//                         focusedBorder: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(30),
-//                           borderSide: BorderSide(
-//                             color: Color(0xFF030047),
-//                             width: 2,
-//                           ),
-//                         ),
-//                         filled: true,
-//                         fillColor: Color(0xFFE1E5F2),
-//                         contentPadding: EdgeInsets.symmetric(
-//                           horizontal: 20,
-//                           vertical: 15,
-//                         ),
-//                       ),
-//                       style: TextStyle(fontSize: 18),
-//                     ),
-//                   ),
-//                 ),
+  /// Builds the form section containing text fields.
+  Widget _buildFormSection(SignupController controller, BuildContext context) {
+    return Column(
+      children: [
+        // Email field
+        _buildTextField(
+          controller: controller.emailController,
+          label: "Email",
+          hint: "Enter your email",
+          prefixIcon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+        ),
 
-//                 // Confirm Password text field
-//                 Positioned(
-//                   top: screenHeight * .63,
-//                   left: screenHeight * .04,
-//                   right: screenHeight * .04,
-//                   child: Obx(
-//                     () => TextField(
-//                       controller: controller.confirmPasswordController,
-//                       obscureText: !controller.isConfirmPasswordVisible.value,
-//                       decoration: InputDecoration(
-//                         suffixIcon: IconButton(
-//                           icon: Icon(
-//                             controller.isConfirmPasswordVisible.value
-//                                 ? Icons.visibility_outlined
-//                                 : Icons.visibility_off_outlined,
-//                             color: Color(0xFF030047),
-//                           ),
-//                           onPressed: controller.toggleConfirmPasswordVisibility,
-//                         ),
-//                         labelText: 'Confirm Password',
-//                         labelStyle: TextStyle(
-//                           color: Color.fromARGB(255, 193, 204, 240),
-//                         ),
-//                         enabledBorder: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(30),
-//                           borderSide: BorderSide(
-//                             color: Colors.transparent,
-//                             width: 2,
-//                           ),
-//                         ),
-//                         focusedBorder: OutlineInputBorder(
-//                           borderRadius: BorderRadius.circular(30),
-//                           borderSide: BorderSide(
-//                             color: Color(0xFF030047),
-//                             width: 2,
-//                           ),
-//                         ),
-//                         filled: true,
-//                         fillColor: Color(0xFFE1E5F2),
-//                         contentPadding: EdgeInsets.symmetric(
-//                           horizontal: 20,
-//                           vertical: 15,
-//                         ),
-//                       ),
-//                       style: TextStyle(fontSize: 18),
-//                     ),
-//                   ),
-//                 ),
+        const SizedBox(height: 12), // Reduced spacing
+        // Phone number field
+        _buildTextField(
+          controller: controller.phoneController,
+          label: "Phone Number",
+          hint: "Enter your phone number",
+          prefixIcon: Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        ),
 
-//                 // Sign up button
-//                 Positioned(
-//                   bottom: screenHeight * .13,
-//                   left: 0,
-//                   right: 0,
-//                   child: Center(
-//                     child: SizedBox(
-//                       width: MediaQuery.of(context).size.width * 0.8,
-//                       height: 60,
-//                       child: ElevatedButton(
-//                         onPressed: controller.signUp,
-//                         style: ElevatedButton.styleFrom(
-//                           backgroundColor: Color(0xFFFFCC3E),
-//                           shape: RoundedRectangleBorder(
-//                             borderRadius: BorderRadius.circular(30),
-//                           ),
-//                         ),
-//                         child: Text(
-//                           "SIGN UP",
-//                           style: TextStyle(
-//                             color: Color(0xFF030047),
-//                             fontSize: 16,
-//                             fontWeight: FontWeight.bold,
-//                           ),
-//                         ),
-//                       ),
-//                     ),
-//                   ),
-//                 ),
+        const SizedBox(height: 12), // Reduced spacing
+        // Password field
+        Obx(
+          () => _buildTextField(
+            controller: controller.passwordController,
+            label: "Password",
+            hint: "Create a password",
+            prefixIcon: Icons.lock_outline,
+            obscureText: !controller.isPasswordVisible.value,
+            suffixIcon: IconButton(
+              icon: Icon(
+                controller.isPasswordVisible.value
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: Colors.grey.shade600,
+              ),
+              onPressed: controller.togglePasswordVisibility,
+            ),
+            textInputAction: TextInputAction.next,
+          ),
+        ),
 
-//                 // Login link
-//                 Positioned(
-//                   bottom: screenHeight * .06,
-//                   left: 0,
-//                   right: 0,
-//                   child: Center(
-//                     child: SizedBox(
-//                       width: MediaQuery.of(context).size.width * 0.9,
-//                       height: 60,
-//                       child: Row(
-//                         mainAxisAlignment: MainAxisAlignment.center,
-//                         children: [
-//                           Text(
-//                             "Already have an account? ",
-//                             style: TextStyle(color: Colors.white, fontSize: 20),
-//                           ),
-//                           TextButton(
-//                             onPressed: () => Get.offAll(() => Signin()),
-//                             child: Text(
-//                               "Login",
-//                               style: TextStyle(
-//                                 color: Color(0xFFFFCC3E),
-//                                 fontSize: 20,
-//                                 fontWeight: FontWeight.bold,
-//                               ),
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
+        const SizedBox(height: 12), // Reduced spacing
+        // Confirm Password field
+        Obx(
+          () => _buildTextField(
+            controller: controller.confirmPasswordController,
+            label: "Confirm Password",
+            hint: "Confirm your password",
+            prefixIcon: Icons.lock_reset_outlined,
+            obscureText: !controller.isConfirmPasswordVisible.value,
+            suffixIcon: IconButton(
+              icon: Icon(
+                controller.isConfirmPasswordVisible.value
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: Colors.grey.shade600,
+              ),
+              onPressed: controller.toggleConfirmPasswordVisibility,
+            ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => controller.signUp(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Reusable text field builder for consistent styling.
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData prefixIcon,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    List<TextInputFormatter>? inputFormatters,
+    Function(String)? onSubmitted,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13, // Slightly reduced font size for labels
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF030047),
+          ),
+        ),
+        const SizedBox(height: 6), // Reduced spacing
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          inputFormatters: inputFormatters,
+          onFieldSubmitted: onSubmitted,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 13,
+            ), // Slightly reduced hint font size
+            prefixIcon: Icon(
+              prefixIcon,
+              color: Colors.grey.shade600,
+              size: 18,
+            ), // Smaller icon size
+            suffixIcon: suffixIcon,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                10,
+              ), // Slightly smaller border radius
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: Color.fromARGB(255, 145, 28, 28),
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14, // Reduced content padding
+              vertical: 14, // Reduced content padding
+            ),
+          ),
+          style: const TextStyle(
+            fontSize: 15,
+          ), // Slightly reduced input font size
+        ),
+      ],
+    );
+  }
+
+  /// Builds the Sign Up button.
+  Widget _buildSignUpButton(SignupController controller) {
+    return Obx(
+      () => SizedBox(
+        height: 50, // Reduced button height
+        child: ElevatedButton(
+          onPressed: controller.isLoading.value == true
+              ? null
+              : controller.signUp,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color.fromARGB(255, 145, 28, 28),
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shadowColor: const Color.fromARGB(255, 71, 0, 8).withOpacity(0.3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                10,
+              ), // Slightly smaller button radius
+            ),
+            disabledBackgroundColor: Colors.grey.shade300,
+          ),
+          child: controller.isLoading.value == true
+              ? const SizedBox(
+                  width: 18, // Smaller progress indicator
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text(
+                  'Sign Up',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ), // Slightly reduced font size
+                ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds the "Already have an account?" login link.
+  Widget _buildLoginLink(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Already have an account? ",
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.grey.shade700,
+            fontSize: 14, // Slightly reduced font size
+          ),
+        ),
+        TextButton(
+          onPressed: () => Get.offAll(() => Signin()),
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text(
+            "Login",
+            style: TextStyle(
+              color: Color.fromARGB(255, 145, 28, 28),
+              fontSize: 14, // Slightly reduced font size
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

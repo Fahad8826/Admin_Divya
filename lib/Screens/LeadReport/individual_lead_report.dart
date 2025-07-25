@@ -1,221 +1,4 @@
-// import 'package:admin/Controller/lead_report_controller.dart';
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
-// import 'package:intl/intl.dart';
 
-// class LeadDetailPage extends StatelessWidget {
-//   final Map<String, dynamic> lead;
-
-//   LeadDetailPage({super.key, required this.lead});
-
-//   final controller = Get.put(LeadReportController());
-
-//   Color _getStatusColor(String status) {
-//     switch (status.toUpperCase()) {
-//       case 'HOT':
-//         return Colors.red;
-//       case 'WARM':
-//         return Colors.orange;
-//       case 'COLD':
-//         return Colors.blue;
-//       default:
-//         return Colors.grey;
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text(
-//           lead['name'] ?? 'Lead Details',
-//           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
-//         ),
-//         centerTitle: true,
-//         backgroundColor: Colors.white,
-//         foregroundColor: Colors.grey[900],
-//         elevation: 1,
-//       ),
-//       body: SingleChildScrollView(
-//         padding: const EdgeInsets.all(16.0),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             // Main Lead Card
-//             Card(
-//               elevation: 2,
-//               shape: RoundedRectangleBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//               ),
-//               child: Padding(
-//                 padding: const EdgeInsets.all(16.0),
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     // Header with name and status
-//                     Row(
-//                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                       children: [
-//                         Expanded(
-//                           child: Text(
-//                             lead['name'] ?? 'N/A',
-//                             style: const TextStyle(
-//                               fontSize: 20,
-//                               fontWeight: FontWeight.bold,
-//                             ),
-//                           ),
-//                         ),
-//                         Row(
-//                           children: [
-//                             if (lead['isArchived'] == true)
-//                               Container(
-//                                 margin: const EdgeInsets.only(right: 8),
-//                                 padding: const EdgeInsets.symmetric(
-//                                   horizontal: 8,
-//                                   vertical: 4,
-//                                 ),
-//                                 decoration: BoxDecoration(
-//                                   color: Colors.red.shade100,
-//                                   borderRadius: BorderRadius.circular(12),
-//                                 ),
-//                                 child: const Text(
-//                                   'ARCHIVED',
-//                                   style: TextStyle(
-//                                     color: Colors.red,
-//                                     fontWeight: FontWeight.bold,
-//                                     fontSize: 10,
-//                                   ),
-//                                 ),
-//                               ),
-//                             Container(
-//                               padding: const EdgeInsets.symmetric(
-//                                 horizontal: 10,
-//                                 vertical: 5,
-//                               ),
-//                               decoration: BoxDecoration(
-//                                 color: _getStatusColor(lead['status'] ?? ''),
-//                                 borderRadius: BorderRadius.circular(15),
-//                               ),
-//                               child: Text(
-//                                 lead['status'] ?? 'N/A',
-//                                 style: const TextStyle(
-//                                   color: Colors.white,
-//                                   fontWeight: FontWeight.w600,
-//                                   fontSize: 12,
-//                                 ),
-//                               ),
-//                             ),
-//                           ],
-//                         ),
-//                       ],
-//                     ),
-
-//                     const SizedBox(height: 16),
-
-//                     // Details in a clean list format
-//                     _buildDetailRow('Customer ID', lead['customerId'] ?? 'N/A'),
-//                     _buildDetailRow('Lead ID', lead['leadId'] ?? 'N/A'),
-//                     _buildDetailRow('Primary Phone', lead['phone1'] ?? 'N/A'),
-
-//                     if (lead['phone2'] != null &&
-//                         lead['phone2'].toString().isNotEmpty)
-//                       _buildDetailRow('Secondary Phone', lead['phone2']),
-
-//                     _buildDetailRow('Address', lead['address'] ?? 'N/A'),
-//                     _buildDetailRow('Place', lead['place'] ?? 'N/A'),
-//                     _buildDetailRow('Product ID', lead['productID'] ?? 'N/A'),
-//                     _buildDetailRow('Salesman', lead['salesman'] ?? 'N/A'),
-//                     _buildDetailRow(
-//                       'Numbers',
-//                       lead['nos']?.toString() ?? 'N/A',
-//                     ),
-
-//                     _buildDetailRow(
-//                       'Created Date',
-//                       lead['createdAt'] != null
-//                           ? DateFormat(
-//                               'MMM dd, yyyy - HH:mm',
-//                             ).format(lead['createdAt'])
-//                           : 'N/A',
-//                     ),
-
-//                     _buildDetailRow(
-//                       'Follow Up Date',
-//                       lead['followUpDate'] != null
-//                           ? DateFormat(
-//                               'MMM dd, yyyy - HH:mm',
-//                             ).format(lead['followUpDate'])
-//                           : 'N/A',
-//                     ),
-
-//                     // Remarks section
-//                     if (lead['remark'] != null &&
-//                         lead['remark'].toString().isNotEmpty) ...[
-//                       const SizedBox(height: 8),
-//                       const Divider(),
-//                       const SizedBox(height: 8),
-//                       Text(
-//                         'Remarks',
-//                         style: TextStyle(
-//                           fontSize: 14,
-//                           fontWeight: FontWeight.w600,
-//                           color: Colors.grey[700],
-//                         ),
-//                       ),
-//                       const SizedBox(height: 8),
-//                       Container(
-//                         width: double.infinity,
-//                         padding: const EdgeInsets.all(12),
-//                         decoration: BoxDecoration(
-//                           color: Colors.grey[50],
-//                           borderRadius: BorderRadius.circular(6),
-//                           border: Border.all(color: Colors.grey[200]!),
-//                         ),
-//                         child: Text(
-//                           lead['remark'],
-//                           style: const TextStyle(fontSize: 14),
-//                         ),
-//                       ),
-//                     ],
-//                   ],
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildDetailRow(String label, String value) {
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(vertical: 6.0),
-//       child: Row(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           SizedBox(
-//             width: 110,
-//             child: Text(
-//               '$label:',
-//               style: TextStyle(
-//                 fontWeight: FontWeight.w500,
-//                 color: Colors.grey[600],
-//                 fontSize: 14,
-//               ),
-//             ),
-//           ),
-//           Expanded(
-//             child: Text(
-//               value,
-//               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-// Individual Lead Detail Page
 
 import 'package:admin/Controller/lead_report_controller.dart';
 import 'package:flutter/material.dart';
@@ -229,11 +12,10 @@ class LeadDetailPage extends StatelessWidget {
 
   // Define a consistent and professional color palette
   static const Color _primaryColor = Color(
-    0xFF1976D2,
+    0xFFD13443,
   ); // A solid blue for primary accents
-  static const Color _accentColor = Color(
-    0xFFD32F2F,
-  ); // A strong red for "HOT" and warnings
+  static const Color _accentColor = Color(0xFFD32F2F);
+  // A strong red for "HOT" and warnings
   static const Color _textColor = Color(
     0xFF212121,
   ); // Very dark grey for main text
@@ -281,35 +63,12 @@ class LeadDetailPage extends StatelessWidget {
         elevation: 2, // Subtle shadow for app bar
         leading: IconButton(
           icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
+            Icons.arrow_back,
             size: 20,
           ), // Modern back icon
           onPressed: () => Navigator.of(context).pop(),
           color: _textColor, // Icon color matches text
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.edit_outlined,
-              color: _primaryColor,
-              size: 22,
-            ), // Primary blue for action icon
-            onPressed: () {
-              // Action for editing lead
-              Get.snackbar(
-                'Edit Lead',
-                'Edit functionality will be implemented here.',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: _primaryColor,
-                colorText: _cardColor,
-                margin: const EdgeInsets.all(16),
-                borderRadius: 8,
-              );
-            },
-            tooltip: 'Edit Lead',
-          ),
-          const SizedBox(width: 8), // Padding on the right
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

@@ -1,4 +1,3 @@
-
 import 'package:admin/home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,8 +12,6 @@ class SigninController extends GetxController {
 
   // Observable variables
   var isPasswordVisible = false.obs;
-  var isInputEmpty = true.obs;
-  var isInputValid = false.obs;
   var isLoading = false.obs; // Added loading state
   var hasError = false.obs;
   var errorMessage = ''.obs;
@@ -35,19 +32,14 @@ class SigninController extends GetxController {
 
   /// Setup validation listeners for real-time feedback
   void _setupValidationListeners() {
+    // Listen to changes to clear error message when user starts typing
     emailOrPhoneController.addListener(() {
-      final input = emailOrPhoneController.text.trim();
-      isInputEmpty.value = input.isEmpty;
-      isInputValid.value = _isValidEmail(input) || _isValidPhone(input);
-
-      // Clear error when user starts typing
       if (hasError.value) {
         _clearError();
       }
     });
 
     passwordController.addListener(() {
-      // Clear error when user starts typing
       if (hasError.value) {
         _clearError();
       }
@@ -68,35 +60,53 @@ class SigninController extends GetxController {
 
   /// Validate email format
   bool _isValidEmail(String email) {
+    // A more robust email regex
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
   }
 
-  /// Validate phone format
+  /// Validate phone format (for India, 10 digits)
+  /// Adjust regex based on your target region's phone number format
   bool _isValidPhone(String phone) {
-    final phoneRegex = RegExp(r'^\+?[\d\s-]{10,}$');
+    // This regex checks for a 10-digit number.
+    // If you need to support country codes, leading zeros, or other formats,
+    // adjust this regex accordingly.
+    final phoneRegex = RegExp(r'^[0-9]{10}$');
     return phoneRegex.hasMatch(phone);
   }
 
   /// Firebase sign in method
+  /// Returns null on success, or an error message string on failure.
   Future<String?> signIn(String input, String password) async {
     try {
       String? email;
       String? uid;
+      String collectionName = ''; // To track which collection the user belongs to
 
       if (_isValidEmail(input)) {
         email = input;
       } else if (_isValidPhone(input)) {
-        // Query Firestore for phone number
-        QuerySnapshot query = await FirebaseFirestore.instance
-            .collection('admins')
-            .where('phone', isEqualTo: input)
-            .limit(1)
-            .get();
+        // Search across all relevant collections for the phone number
+        final List<String> collections = ['admins', 'Sales', 'Makers'];
+        DocumentSnapshot? userDoc;
 
-        if (query.docs.isNotEmpty) {
-          email = query.docs.first.get('email');
-          uid = query.docs.first.get('uid');
+        for (final collection in collections) {
+          QuerySnapshot query = await FirebaseFirestore.instance
+              .collection(collection)
+              .where('phone', isEqualTo: input)
+              .limit(1)
+              .get();
+
+          if (query.docs.isNotEmpty) {
+            userDoc = query.docs.first;
+            collectionName = collection; // Store the collection name
+            break; // Found the user in this collection, no need to check others
+          }
+        }
+
+        if (userDoc != null) {
+          email = userDoc.get('email');
+          uid = userDoc.id; // Use doc.id for UID
         } else {
           return 'No account found for this phone number.';
         }
@@ -104,29 +114,36 @@ class SigninController extends GetxController {
         return 'Invalid email or phone number format.';
       }
 
-      // Sign in with Firebase Auth
+      // Proceed with Firebase Auth sign-in using the retrieved email
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email!, password: password);
 
+      // Ensure UID is set for role verification
       uid ??= userCredential.user!.uid;
 
-      // Verify admin role
-      DocumentSnapshot adminDoc = await FirebaseFirestore.instance
-          .collection('admins')
+      // Now, verify the role based on the UID.
+      // Assuming 'admins' collection is where your primary users for this app are,
+      // and 'Sales', 'Makers' are other roles that might also sign in.
+      // You can refine this role check based on your specific access control logic.
+      DocumentSnapshot userRoleDoc = await FirebaseFirestore.instance
+          .collection('admins') // Only checking admins collection for access
           .doc(uid)
           .get();
 
-      if (adminDoc.exists && adminDoc.get('role') == 'admin') {
-        return null; // Success
+      if (userRoleDoc.exists && userRoleDoc.get('role') == 'admin') {
+        return null; // Success, user is an admin
       } else {
+        // If not found in 'admins' or not an 'admin' role, sign out and deny access
         await FirebaseAuth.instance.signOut();
-        return 'Access denied. You are not an admin.';
+        return 'Access denied. You are not authorized to use this admin panel.';
       }
     } on FirebaseAuthException catch (e) {
       // Handle specific Firebase Auth errors
       switch (e.code) {
         case 'user-not-found':
           return 'No user found for that email.';
+        case 'invalid-email': // Might occur if the resolved email is somehow malformed
+          return 'The email address is not valid.';
         case 'wrong-password':
           return 'Wrong password provided.';
         case 'user-disabled':
@@ -136,48 +153,40 @@ class SigninController extends GetxController {
         case 'network-request-failed':
           return 'Network error. Please check your internet connection.';
         default:
-          return e.message ?? 'Authentication failed.';
+          return e.message ?? 'Authentication failed. Please try again.';
       }
     } catch (e) {
-      return 'Unexpected error: $e';
+      return 'An unexpected error occurred: $e';
     }
   }
 
   /// Handle sign in process with loading state
   Future<void> handleSignIn() async {
     try {
-      // Start loading
       isLoading.value = true;
-      _clearError();
+      _clearError(); // Clear previous errors
 
-      // Add haptic feedback
-      HapticFeedback.lightImpact();
+      HapticFeedback.lightImpact(); // Haptic feedback on button press
 
       final input = emailOrPhoneController.text.trim();
       final password = passwordController.text.trim();
 
-      // Validate inputs
+      // Basic input validation
       if (input.isEmpty || password.isEmpty) {
-        _setError('Please fill in both fields');
-        _showErrorSnackbar('Error', 'Please fill in both fields');
+        _setError('Please fill in both fields.');
+        _handleSignInError('Please fill in both fields.'); // Use consistent error handler
         return;
       }
 
       if (!_isValidEmail(input) && !_isValidPhone(input)) {
-        _setError('Please enter a valid email or phone number');
-        _showErrorSnackbar(
-          'Invalid Input',
-          'Please enter a valid email or phone number',
-        );
+        _setError('Please enter a valid email or 10-digit phone number.');
+        _handleSignInError('Please enter a valid email or 10-digit phone number.'); // Use consistent error handler
         return;
       }
 
       if (password.length < 6) {
-        _setError('Password must be at least 6 characters');
-        _showErrorSnackbar(
-          'Invalid Password',
-          'Password must be at least 6 characters',
-        );
+        _setError('Password must be at least 6 characters long.');
+        _handleSignInError('Password must be at least 6 characters long.'); // Use consistent error handler
         return;
       }
 
@@ -193,20 +202,17 @@ class SigninController extends GetxController {
         _handleSignInError(result);
       }
     } catch (e) {
-      _setError('An unexpected error occurred');
+      _setError('An unexpected error occurred: $e');
       _handleSignInError('An unexpected error occurred: $e');
     } finally {
-      // Always stop loading
-      isLoading.value = false;
+      isLoading.value = false; // Always stop loading
     }
   }
 
   /// Handle successful sign in
   void _handleSignInSuccess() {
-    // Navigate to dashboard
-    Get.offAll(() => Dashboard());
+    Get.offAll(() => Dashboard()); // Navigate to Dashboard
 
-    // Show success message
     Get.snackbar(
       "Welcome Back!",
       "Signed in successfully",
@@ -217,16 +223,14 @@ class SigninController extends GetxController {
       snackPosition: SnackPosition.TOP,
     );
 
-    // Success haptic feedback
-    HapticFeedback.lightImpact();
+    HapticFeedback.lightImpact(); // Success haptic feedback
   }
 
   /// Handle sign in errors
   void _handleSignInError(String error) {
     _showErrorSnackbar("Login Failed", error);
 
-    // Error haptic feedback
-    HapticFeedback.heavyImpact();
+    HapticFeedback.heavyImpact(); // Error haptic feedback
   }
 
   /// Show error snackbar
@@ -239,6 +243,7 @@ class SigninController extends GetxController {
       icon: const Icon(Icons.error, color: Colors.red),
       duration: const Duration(seconds: 4),
       snackPosition: SnackPosition.TOP,
+      margin: const EdgeInsets.all(10), // Added margin for better appearance
     );
   }
 
@@ -248,69 +253,75 @@ class SigninController extends GetxController {
   }
 
   /// Handle forgot password
-  void handleForgotPassword() async {
+  Future<void> handleForgotPassword() async {
     final input = emailOrPhoneController.text.trim();
 
     if (input.isEmpty) {
       Get.snackbar(
         'Error',
-        'Please enter your email address',
+        'Please enter your email address to reset password.',
         backgroundColor: Colors.orange.shade100,
         colorText: Colors.orange.shade700,
+        margin: const EdgeInsets.all(10),
       );
       return;
     }
 
+    // Only allow email for password reset
     if (!_isValidEmail(input)) {
       Get.snackbar(
         'Error',
-        'Please enter a valid email address',
+        'Password reset is only available for email addresses. Please enter a valid email.',
         backgroundColor: Colors.orange.shade100,
         colorText: Colors.orange.shade700,
+        margin: const EdgeInsets.all(10),
       );
       return;
     }
 
     try {
       isLoading.value = true;
+      _clearError(); // Clear any previous errors
 
       await FirebaseAuth.instance.sendPasswordResetEmail(email: input);
 
       Get.snackbar(
         'Password Reset',
-        'Password reset email has been sent to $input',
+        'A password reset link has been sent to $input. Please check your inbox.',
         backgroundColor: Colors.blue.shade100,
         colorText: Colors.blue.shade700,
         icon: const Icon(Icons.email, color: Colors.blue),
-        duration: const Duration(seconds: 4),
+        duration: const Duration(seconds: 5),
+        snackPosition: SnackPosition.TOP,
+        margin: const EdgeInsets.all(10),
       );
     } on FirebaseAuthException catch (e) {
-      String message = 'Failed to send password reset email';
+      String message = 'Failed to send password reset email.';
       if (e.code == 'user-not-found') {
-        message = 'No user found for that email address';
+        message = 'No user found with that email address.';
+      } else if (e.code == 'invalid-email') {
+        message = 'The email address is not valid.';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Too many password reset requests. Please try again later.';
       }
-
       Get.snackbar(
         'Error',
         message,
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade700,
+        margin: const EdgeInsets.all(10),
       );
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Handle social sign in (placeholder for future implementation)
-  
   /// Clear all form data
   void clearForm() {
     emailOrPhoneController.clear();
     passwordController.clear();
     _clearError();
     isPasswordVisible.value = false;
-    isInputEmpty.value = true;
-    isInputValid.value = false;
   }
 
   /// Sign out current user
@@ -318,8 +329,17 @@ class SigninController extends GetxController {
     try {
       await FirebaseAuth.instance.signOut();
       clearForm();
+      // Optionally navigate back to sign-in page after sign out
+      // Get.offAll(() => Signin()); // Assuming Signin is your root for unauthenticated users
     } catch (e) {
-      print('Sign out error: $e');
+      print('Sign out error: $e'); // Log error for debugging
+      Get.snackbar(
+        'Error',
+        'Failed to sign out: ${e.toString()}',
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade700,
+        margin: const EdgeInsets.all(10),
+      );
     }
   }
 }

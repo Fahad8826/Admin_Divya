@@ -360,6 +360,7 @@ class SalesManagementPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         title: const Text(
           'Sales Team',
           style: TextStyle(

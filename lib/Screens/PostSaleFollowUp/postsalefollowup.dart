@@ -33,7 +33,11 @@ class Postsalefollowup extends StatelessWidget {
         foregroundColor: Colors.grey[900],
         title: const Text(
           'Post Sales Follow Up', // Corrected typo: Follw Up -> Follow Up
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: Color(0xFF1A1A1A),
+          ),
         ),
         elevation: 0,
         centerTitle: true,

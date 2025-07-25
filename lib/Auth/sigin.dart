@@ -1,14 +1,19 @@
+import 'package:admin/Auth/signup.dart';
 import 'package:admin/Controller/sign_in_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-class Signin extends StatelessWidget {
+// Change StatelessWidget to GetView<SigninController>
+class Signin extends GetView<SigninController> {
   const Signin({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(SigninController());
+    // You no longer need Get.put(SigninController()) here.
+    // The controller is automatically available via the 'controller' getter.
+    final controller = Get.put(SigninController()); // REMOVE THIS LINE
+
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
@@ -25,32 +30,39 @@ class Signin extends StatelessWidget {
             child: IntrinsicHeight(
               child: Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? screenWidth * 0.15 : 24.0,
-                  vertical: 20.0,
+                  horizontal: isTablet ? screenWidth * 0.1 : 16.0,
+                  vertical: 10.0,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Top spacing
-                    SizedBox(height: screenHeight * 0.10),
+                    SizedBox(height: screenHeight * 0.05),
 
                     // Logo/Brand section
                     _buildLogoSection(context, isTablet),
 
-                    SizedBox(height: screenHeight * 0.04),
+                    SizedBox(height: screenHeight * 0.02),
 
                     // Welcome text section
                     _buildWelcomeSection(context),
 
-                    SizedBox(height: screenHeight * 0.06),
+                    SizedBox(height: screenHeight * 0.03),
 
                     // Form section
-                    _buildFormSection(controller, context, isTablet),
+                    // Use 'controller' directly from GetView
+                    _buildFormSection(controller),
 
-                    SizedBox(height: screenHeight * 0.06),
+                    SizedBox(height: screenHeight * 0.03),
 
                     // Sign in button
-                    _buildSignInButton(controller, context),
+                    // Use 'controller' directly from GetView
+                    _buildSignInButton(controller),
+
+                    SizedBox(height: screenHeight * 0.03),
+
+                    // Sign up link
+                    _buildSignUpLink(context),
                   ],
                 ),
               ),
@@ -64,14 +76,11 @@ class Signin extends StatelessWidget {
   Widget _buildLogoSection(BuildContext context, bool isTablet) {
     return Center(
       child: Container(
-        width: isTablet ? 180 : 160,
-        height: isTablet ? 240 : 160,
-
+        width: isTablet ? 150 : 120,
+        height: isTablet ? 200 : 130,
         child: Image.asset(
           'assets/images/logo.png',
-          fit: BoxFit.cover,
-          width: isTablet ? 120 : 80,
-          height: isTablet ? 120 : 80,
+          fit: BoxFit.contain,
           alignment: Alignment.center,
         ),
       ),
@@ -86,16 +95,16 @@ class Signin extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF030047),
-            fontSize: 32,
+            fontSize: 28,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           'Sign in to continue to your account',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: Colors.grey.shade600,
-            fontSize: 16,
+            fontSize: 14,
           ),
           textAlign: TextAlign.center,
         ),
@@ -103,14 +112,10 @@ class Signin extends StatelessWidget {
     );
   }
 
-  Widget _buildFormSection(
-    SigninController controller,
-    BuildContext context,
-    bool isTablet,
-  ) {
+  Widget _buildFormSection(SigninController controller) {
     return Column(
       children: [
-        // Email field
+        // Email or Phone field
         _buildTextField(
           controller: controller.emailOrPhoneController,
           label: "Email or Phone Number",
@@ -120,7 +125,7 @@ class Signin extends StatelessWidget {
           textInputAction: TextInputAction.next,
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         // Password field
         Obx(
@@ -136,6 +141,7 @@ class Signin extends StatelessWidget {
                     ? Icons.visibility_outlined
                     : Icons.visibility_off_outlined,
                 color: Colors.grey.shade600,
+                size: 18,
               ),
               onPressed: controller.togglePasswordVisibility,
             ),
@@ -164,12 +170,12 @@ class Signin extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
             color: Color(0xFF030047),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           obscureText: obscureText,
@@ -178,45 +184,45 @@ class Signin extends StatelessWidget {
           onFieldSubmitted: onSubmitted,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-            prefixIcon: Icon(prefixIcon, color: Colors.grey.shade600, size: 20),
+            hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+            prefixIcon: Icon(prefixIcon, color: Colors.grey.shade600, size: 18),
             suffixIcon: suffixIcon,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(
-                color: Color.fromARGB(255, 209, 63, 87),
+                color: Color.fromARGB(255, 145, 28, 28),
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Colors.red, width: 1),
             ),
             filled: true,
             fillColor: Colors.grey.shade50,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+              horizontal: 14,
+              vertical: 14,
             ),
           ),
-          style: const TextStyle(fontSize: 16),
+          style: const TextStyle(fontSize: 15),
         ),
       ],
     );
   }
 
-  Widget _buildSignInButton(SigninController controller, BuildContext context) {
+  Widget _buildSignInButton(SigninController controller) {
     return Obx(
       () => SizedBox(
-        height: 56,
+        height: 50,
         child: ElevatedButton(
           onPressed: controller.isLoading.value == true
               ? null
@@ -227,14 +233,14 @@ class Signin extends StatelessWidget {
             elevation: 2,
             shadowColor: const Color.fromARGB(255, 71, 0, 8).withOpacity(0.3),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             disabledBackgroundColor: Colors.grey.shade300,
           ),
           child: controller.isLoading.value == true
               ? const SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 18,
+                  height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -242,10 +248,43 @@ class Signin extends StatelessWidget {
                 )
               : const Text(
                   'Sign In',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSignUpLink(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Don't have an account? ",
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.grey.shade700,
+            fontSize: 14,
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            Get.offAll(() => Signup());
+          },
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text(
+            "Sign Up",
+            style: TextStyle(
+              color: Color.fromARGB(255, 145, 28, 28),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
