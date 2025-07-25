@@ -1,22 +1,15 @@
 name: admin
 description: "A new Flutter project."
-
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-
-
-
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
   sdk: ^3.8.1
 
-
 dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   firebase_auth: ^5.6.0
   firebase_core: ^3.14.0
@@ -47,30 +40,43 @@ dependencies:
   external_path: ^2.2.0
   open_file: ^3.5.10
   share_plus: ^11.0.0
- 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.1
+  flutter_native_splash: ^2.3.9
+  flutter_launcher_icons: ^0.13.1
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+flutter_native_splash:
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
+  color: "#C9253B"
 
-# The following section is specific to Flutter packages.
+  image: "assets/images/admin.png"
+
+  android: true
+
+  ios: true
+
+
+
+  android_12:
+
+    image: "assets/images/admin.png"
+
+    icon_background_color: "#C9253B"
+
+    image_dark: "assets/images/admin.png"
+
+    icon_background_color_dark: "#C9253B"
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/admin.jpg
+
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
-
   assets:
     - assets/images/bottom.png
     - assets/images/top.png
@@ -80,4 +86,3 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/lottie/
-

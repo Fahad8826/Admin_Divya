@@ -107,7 +107,10 @@ class Dashboard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+          colors: [
+            Color.fromARGB(255, 209, 52, 67),
+            Color.fromARGB(255, 193, 22, 51),
+          ],
         ),
       ),
       child: Row(
@@ -121,12 +124,20 @@ class Dashboard extends StatelessWidget {
               height: screenSize.width * 0.11,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFF59E0B), Color(0xFFEAB308)],
+                  colors: [
+                    Color.fromARGB(255, 209, 52, 67),
+                    Color.fromARGB(255, 193, 22, 51),
+                  ],
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFF59E0B).withOpacity(0.3),
+                    color: const Color.fromARGB(
+                      255,
+                      245,
+                      34,
+                      11,
+                    ).withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -213,7 +224,10 @@ class Dashboard extends StatelessWidget {
       padding: EdgeInsets.all(screenSize.width * 0.04),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+          colors: [
+            Color.fromARGB(255, 209, 52, 67),
+            Color.fromARGB(255, 209, 63, 87),
+          ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
@@ -280,7 +294,7 @@ class Dashboard extends StatelessWidget {
               'Active Orders',
               controller.totalordercount.value.toString(),
               Icons.shopping_cart,
-              const Color(0xFF3B82F6),
+              const Color.fromARGB(255, 209, 52, 67),
 
               screenSize,
             ),

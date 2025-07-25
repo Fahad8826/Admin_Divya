@@ -276,20 +276,43 @@ class LeadReportController extends GetxController {
           .collection('Leads')
           .orderBy('createdAt', descending: true);
 
+      // Apply filters
       if (salespersonFilter.value.isNotEmpty &&
           salespersonFilter.value != 'All') {
-        query = query.where('salesmanID', isEqualTo: salespersonFilter.value);
+        // Fetch user IDs for the selected salesman name
+        final userSnapshot = await _firestore
+            .collection('users')
+            .where('name', isEqualTo: salespersonFilter.value)
+            .get();
+        if (userSnapshot.docs.isNotEmpty) {
+          final userId = userSnapshot.docs.first.id;
+          query = query.where('salesmanID', isEqualTo: userId);
+        } else {
+          return []; // No matching salesman found
+        }
       }
+
+      if (statusFilter.value.isNotEmpty && statusFilter.value != 'All') {
+        query = query.where('status', isEqualTo: statusFilter.value);
+      }
+
+      if (placeFilter.value.isNotEmpty && placeFilter.value != 'All') {
+        query = query.where('place', isEqualTo: placeFilter.value);
+      }
+
       if (startDate.value != null) {
         query = query.where(
           'createdAt',
-          isGreaterThanOrEqualTo: startDate.value,
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate.value!),
         );
       }
+
       if (endDate.value != null) {
         query = query.where(
           'createdAt',
-          isLessThanOrEqualTo: endDate.value!.add(const Duration(days: 1)),
+          isLessThanOrEqualTo: Timestamp.fromDate(
+            endDate.value!.add(const Duration(days: 1)),
+          ),
         );
       }
 
@@ -302,6 +325,7 @@ class LeadReportController extends GetxController {
         final String? salesmanID = data['salesmanID'];
         final String salesmanName = await getSalesmanName(salesmanID);
 
+        // Apply search query filter on the client side
         final String clientSearchQuery = searchQuery.value.toLowerCase();
         final String name = data['name']?.toString().toLowerCase() ?? '';
         final String leadId = data['leadId']?.toString().toLowerCase() ?? '';
@@ -343,7 +367,7 @@ class LeadReportController extends GetxController {
       }
       return fullLeadsData;
     } catch (e) {
-      log('Error fetching all leads for report with filters: $e');
+      log('Error fetching leads for report: $e');
       Get.snackbar(
         'Error',
         'Failed to retrieve leads for report: $e',
@@ -395,7 +419,7 @@ class LeadReportController extends GetxController {
     final excel = Excel.createExcel();
     final Sheet sheet = excel['All Leads Data'];
 
-    // Set column widths for better readability
+    // Set column widths
     sheet.setColumnWidth(0, 25); // Lead ID
     sheet.setColumnWidth(1, 25); // Name
     sheet.setColumnWidth(2, 20); // Phone1
@@ -410,6 +434,28 @@ class LeadReportController extends GetxController {
     sheet.setColumnWidth(11, 20); // Product ID
     sheet.setColumnWidth(12, 20); // NOS
     sheet.setColumnWidth(13, 20); // Customer ID
+
+    // Add filter description
+    final filterDescription = [
+      if (salespersonFilter.value.isNotEmpty &&
+          salespersonFilter.value != 'All')
+        'Salesperson: ${salespersonFilter.value}',
+      if (statusFilter.value.isNotEmpty && statusFilter.value != 'All')
+        'Status: ${statusFilter.value}',
+      if (placeFilter.value.isNotEmpty && placeFilter.value != 'All')
+        'Place: ${placeFilter.value}',
+      if (startDate.value != null && endDate.value != null)
+        'Date Range: ${DateFormat('dd-MMM-yyyy').format(startDate.value!)} to ${DateFormat('dd-MMM-yyyy').format(endDate.value!)}',
+    ].join(' | ');
+
+    if (filterDescription.isNotEmpty) {
+      var filterCell = sheet.cell(
+        CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
+      );
+      filterCell.value = TextCellValue('Filters: $filterDescription');
+      filterCell.cellStyle = CellStyle(fontSize: 12, italic: true);
+      sheet.setRowHeight(0, 20);
+    }
 
     // Define header row
     final headers = [
@@ -429,10 +475,13 @@ class LeadReportController extends GetxController {
       'Customer ID',
     ];
 
-    // Add headers to the first row of the Excel sheet
+    // Add headers
     for (int i = 0; i < headers.length; i++) {
       var cell = sheet.cell(
-        CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
+        CellIndex.indexByColumnRow(
+          columnIndex: i,
+          rowIndex: filterDescription.isNotEmpty ? 1 : 0,
+        ),
       );
       cell.value = TextCellValue(headers[i]);
       cell.cellStyle = CellStyle(
@@ -445,7 +494,7 @@ class LeadReportController extends GetxController {
 
     final dateFormat = DateFormat('dd-MMM-yyyy HH:mm');
 
-    // Populate data rows from the leadsData list
+    // Populate data rows
     for (int rowIndex = 0; rowIndex < leadsData.length; rowIndex++) {
       final lead = leadsData[rowIndex];
 
@@ -466,22 +515,19 @@ class LeadReportController extends GetxController {
             : 'N/A',
         lead['remark']?.toString() ?? 'N/A',
         lead['productID']?.toString() ?? 'N/A',
-        lead['nos']?.toString() ??
-            'N/A', // Convert to string to avoid int error
-        lead['customerId']?.toString() ??
-            'N/A', // Convert to string to avoid int error
+        lead['nos']?.toString() ?? 'N/A',
+        lead['customerId']?.toString() ?? 'N/A',
       ];
 
       for (int colIndex = 0; colIndex < rowData.length; colIndex++) {
         var cell = sheet.cell(
           CellIndex.indexByColumnRow(
             columnIndex: colIndex,
-            rowIndex: rowIndex + 1,
+            rowIndex: rowIndex + (filterDescription.isNotEmpty ? 2 : 1),
           ),
         );
         cell.value = TextCellValue(rowData[colIndex]);
 
-        // Apply color coding to the 'Status' column
         if (colIndex == 7) {
           final status = lead['status']?.toString().toLowerCase();
           if (status == 'new') {
@@ -509,8 +555,9 @@ class LeadReportController extends GetxController {
       }
     }
 
-    // Add a summary row for total leads
-    final summaryRow = leadsData.length + 2;
+    // Add summary row
+    final summaryRow =
+        leadsData.length + (filterDescription.isNotEmpty ? 3 : 2);
     var summaryCell = sheet.cell(
       CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: summaryRow),
     );
@@ -521,7 +568,7 @@ class LeadReportController extends GetxController {
       backgroundColorHex: ExcelColor.fromHexString('#E0E0E0'),
     );
 
-    // Add a timestamp for when the report was generated
+    // Add timestamp
     final timestampRow = summaryRow + 1;
     var timestampCell = sheet.cell(
       CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: timestampRow),
@@ -544,6 +591,30 @@ class LeadReportController extends GetxController {
     }
 
     return file;
+  }
+
+  /// Downloads data for a single salesman as a PDF
+  Future<void> downloadSingleSalesmanAsPDF(
+    BuildContext context,
+    String salesmanName,
+  ) async {
+    if (isExporting.value) return;
+
+    salespersonFilter.value = salesmanName; // Set the filter for the salesman
+    await downloadAllLeadsDataAsPDF(context);
+    salespersonFilter.value = ''; // Reset the filter after download
+  }
+
+  /// Downloads data for a single salesman as an Excel file
+  Future<void> downloadSingleSalesmanAsExcel(
+    BuildContext context,
+    String salesmanName,
+  ) async {
+    if (isExporting.value) return;
+
+    salespersonFilter.value = salesmanName; // Set the filter for the salesman
+    await downloadAllLeadsDataAsExcel(context);
+    salespersonFilter.value = ''; // Reset the filter after download
   }
 
   /// Downloads all lead data as a PDF document (based on current filters).
@@ -590,6 +661,19 @@ class LeadReportController extends GetxController {
       final pdf = pw.Document();
       final dateFormat = DateFormat('dd-MMM-yyyy HH:mm');
 
+      // Build filter description
+      final filterDescription = [
+        if (salespersonFilter.value.isNotEmpty &&
+            salespersonFilter.value != 'All')
+          'Salesperson: ${salespersonFilter.value}',
+        if (statusFilter.value.isNotEmpty && statusFilter.value != 'All')
+          'Status: ${statusFilter.value}',
+        if (placeFilter.value.isNotEmpty && placeFilter.value != 'All')
+          'Place: ${placeFilter.value}',
+        if (startDate.value != null && endDate.value != null)
+          'Date Range: ${dateFormat.format(startDate.value!)} to ${dateFormat.format(endDate.value!)}',
+      ].join(' | ');
+
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4.landscape.copyWith(
@@ -609,6 +693,16 @@ class LeadReportController extends GetxController {
                   ),
                 ),
               ),
+              if (filterDescription.isNotEmpty) ...[
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  'Filters: $filterDescription',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontStyle: pw.FontStyle.italic,
+                  ),
+                ),
+              ],
               pw.SizedBox(height: 20),
               pw.Table.fromTextArray(
                 headers: [
@@ -646,18 +740,17 @@ class LeadReportController extends GetxController {
                 cellAlignment: pw.Alignment.centerLeft,
                 cellPadding: const pw.EdgeInsets.all(5),
                 cellStyle: pw.TextStyle(fontSize: 9),
-                cellHeight: 30, // Fixed height for cells to ensure readability
+                cellHeight: 30,
                 columnWidths: {
-                  0: const pw.FlexColumnWidth(1.5), // Lead ID
-                  1: const pw.FlexColumnWidth(2.5), // Name
-                  2: const pw.FlexColumnWidth(1.5), // Phone1
-                  3: const pw.FlexColumnWidth(1.5), // Phone2
-                  4: const pw.FlexColumnWidth(2), // Place
-                  5: const pw.FlexColumnWidth(2), // Salesman
-                  6: const pw.FlexColumnWidth(1.2), // Status
-                  7: const pw.FlexColumnWidth(2), // Created At
+                  0: const pw.FlexColumnWidth(1.5),
+                  1: const pw.FlexColumnWidth(2.5),
+                  2: const pw.FlexColumnWidth(1.5),
+                  3: const pw.FlexColumnWidth(1.5),
+                  4: const pw.FlexColumnWidth(2),
+                  5: const pw.FlexColumnWidth(2),
+                  6: const pw.FlexColumnWidth(1.2),
+                  7: const pw.FlexColumnWidth(2),
                 },
-                // Enable text wrapping for long content
               ),
               pw.SizedBox(height: 20),
               pw.Text(
@@ -1026,8 +1119,6 @@ class LeadReportController extends GetxController {
       isExporting.value = false;
     }
   }
-
-
 
   Color getStatusColor(String status) {
     switch (status.toUpperCase()) {

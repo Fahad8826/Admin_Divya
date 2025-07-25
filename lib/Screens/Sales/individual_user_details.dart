@@ -456,7 +456,7 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[600],
+                              backgroundColor: Colors.green,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -545,12 +545,17 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
                       width: cameraIconSize,
                       height: cameraIconSize,
                       decoration: BoxDecoration(
-                        color: Colors.blue[600],
+                        color: Color.fromARGB(255, 209, 52, 67),
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withOpacity(0.3),
+                            color: Color.fromARGB(
+                              255,
+                              209,
+                              52,
+                              67,
+                            ).withOpacity(0.3),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),
@@ -906,12 +911,12 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
                 Container(
                   padding: EdgeInsets.all(isTablet ? 12 : 8),
                   decoration: BoxDecoration(
-                    color: Colors.blue[50],
+                    color: Color.fromARGB(255, 209, 52, 67),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
-                    color: Colors.blue[600],
+                    color: Colors.white,
                     size: isTablet ? 28 : 24,
                   ),
                 ),
@@ -960,12 +965,16 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
         labelText: label,
         prefixIcon: Icon(
           icon,
-          color: _isEditing ? Colors.blue[600] : Colors.grey[400],
+          color: _isEditing
+              ? Color.fromARGB(255, 209, 52, 67)
+              : Colors.grey[400],
           size: isTablet ? 24 : 20,
         ),
         suffixIcon: suffixIcon,
         labelStyle: TextStyle(
-          color: _isEditing ? Colors.blue[600] : Colors.grey[500],
+          color: _isEditing
+              ? Color.fromARGB(255, 209, 52, 67)
+              : Colors.grey[500],
           fontSize: isTablet ? 16 : 14,
         ),
         filled: true,
@@ -980,7 +989,10 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+          borderSide: BorderSide(
+            color: Color.fromARGB(255, 209, 52, 67),
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1019,11 +1031,15 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
         labelText: 'Gender',
         prefixIcon: Icon(
           Icons.person_outline,
-          color: _isEditing ? Colors.blue[600] : Colors.grey[400],
+          color: _isEditing
+              ? Color.fromARGB(255, 209, 52, 67)
+              : Colors.grey[400],
           size: isTablet ? 24 : 20,
         ),
         labelStyle: TextStyle(
-          color: _isEditing ? Colors.blue[600] : Colors.grey[500],
+          color: _isEditing
+              ? Color.fromARGB(255, 209, 52, 67)
+              : Colors.grey[500],
           fontSize: isTablet ? 16 : 14,
         ),
         filled: true,
@@ -1038,7 +1054,10 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+          borderSide: BorderSide(
+            color: Color.fromARGB(255, 209, 52, 67),
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1080,11 +1099,15 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
         labelText: 'Role',
         prefixIcon: Icon(
           Icons.work_outline,
-          color: _isEditing ? Colors.blue[600] : Colors.grey[400],
+          color: _isEditing
+              ? Color.fromARGB(255, 209, 52, 67)
+              : Colors.grey[400],
           size: isTablet ? 24 : 20,
         ),
         labelStyle: TextStyle(
-          color: _isEditing ? Colors.blue[600] : Colors.grey[500],
+          color: _isEditing
+              ? Color.fromARGB(255, 209, 52, 67)
+              : Colors.grey[500],
           fontSize: isTablet ? 16 : 14,
         ),
         filled: true,
@@ -1099,7 +1122,10 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+          borderSide: BorderSide(
+            color: Color.fromARGB(255, 209, 52, 67),
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1161,7 +1187,7 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
   Widget _buildFloatingActionButton(bool isTablet) {
     return FloatingActionButton.extended(
       onPressed: _isLoading ? null : _updateUser,
-      backgroundColor: Colors.blue[600],
+      backgroundColor: Color.fromARGB(255, 209, 52, 67),
       foregroundColor: Colors.white,
       icon: _isLoading
           ? SizedBox(

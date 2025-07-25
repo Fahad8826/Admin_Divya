@@ -930,7 +930,11 @@ class _UserDetailPageState extends State<UserDetailPage>
                     color: Colors.blue[50],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, color: Colors.blue[600], size: 20),
+                  child: Icon(
+                    icon,
+                    color: Color.fromARGB(255, 209, 52, 67),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -970,7 +974,7 @@ class _UserDetailPageState extends State<UserDetailPage>
       autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: Colors.blue[600]),
+        prefixIcon: Icon(icon, color: Color.fromARGB(255, 209, 52, 67)),
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: _isEditing ? Colors.white : Colors.grey[50],
@@ -984,7 +988,10 @@ class _UserDetailPageState extends State<UserDetailPage>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+          borderSide: BorderSide(
+            color: Color.fromARGB(255, 209, 52, 67)!,
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1009,7 +1016,7 @@ class _UserDetailPageState extends State<UserDetailPage>
   Widget? _buildFloatingActionButton() {
     return FloatingActionButton.extended(
       onPressed: _isLoading ? null : _updateUser,
-      backgroundColor: Colors.blue[600],
+      backgroundColor: Color.fromARGB(255, 209, 52, 67),
       foregroundColor: Colors.white,
       icon: const Icon(Icons.save),
       label: const Text('Save Changes'),

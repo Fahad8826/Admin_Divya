@@ -66,22 +66,7 @@ class Signin extends StatelessWidget {
       child: Container(
         width: isTablet ? 180 : 160,
         height: isTablet ? 240 : 160,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF030047), Color(0xFF3F61D1)],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF030047).withOpacity(0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-      
+
         child: Image.asset(
           'assets/images/logo.png',
           fit: BoxFit.cover,
@@ -206,7 +191,10 @@ class Signin extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF3F61D1), width: 2),
+              borderSide: const BorderSide(
+                color: Color.fromARGB(255, 209, 63, 87),
+                width: 2,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -234,10 +222,10 @@ class Signin extends StatelessWidget {
               ? null
               : controller.handleSignIn,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF030047),
+            backgroundColor: const Color.fromARGB(255, 145, 28, 28),
             foregroundColor: Colors.white,
             elevation: 2,
-            shadowColor: const Color(0xFF030047).withOpacity(0.3),
+            shadowColor: const Color.fromARGB(255, 71, 0, 8).withOpacity(0.3),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -255,7 +243,7 @@ class Signin extends StatelessWidget {
               : const Text(
                   'Sign In',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ), 
+                ),
         ),
       ),
     );

@@ -242,11 +242,14 @@ class Postsalefollowup extends StatelessWidget {
       MediaQuery.of(context).size.width * 0.02,
     );
 
+    // Remove 'All' from items and use empty string for "no filter"
+    final dropdownItems = ['', ...items.where((item) => item != 'All')];
+
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.45,
       height: MediaQuery.of(context).size.height * 0.065,
       child: DropdownButtonFormField<String>(
-        value: value,
+        value: value?.isEmpty ?? true ? null : value,
         decoration: InputDecoration(
           labelText: label,
           filled: true,
@@ -257,24 +260,18 @@ class Postsalefollowup extends StatelessWidget {
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: borderRadius,
-            borderSide: BorderSide(
-              color: const Color.fromARGB(255, 229, 223, 223),
-              width: 1,
-            ),
+            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: borderRadius,
-            borderSide: BorderSide(
-              color: const Color.fromARGB(255, 217, 216, 216),
-              width: 1.2,
-            ),
+            borderSide: BorderSide(color: Colors.blue, width: 1.2),
           ),
         ),
-        items: items.map((String item) {
+        items: dropdownItems.map((String item) {
           return DropdownMenuItem<String>(
-            value: item,
+            value: item.isEmpty ? '' : item,
             child: Text(
-              item,
+              item.isEmpty ? 'All $label' : item,
               style: TextStyle(
                 fontSize: MediaQuery.of(context).size.width * 0.035,
               ),
@@ -548,56 +545,240 @@ class Postsalefollowup extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Export Order As',
+                'Export Delivered Orders Report',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-              Wrap(
-                // Using Wrap for better layout on smaller screens
-                spacing: 15, // Space between buttons
-                runSpacing: 15, // Space between rows of buttons
-                alignment: WrapAlignment.center,
+              // Export with Current Filters
+              const Text(
+                'Export with Current Filters',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text('PDF'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Pass context to the controller method
-                      controller.downloadAllOrdersDataAsPDF(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      foregroundColor: Colors.white,
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.picture_as_pdf),
+                      label: const Text('PDF'),
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              controller.downloadAllOrdersDataAsPDF(context);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.grid_on),
-                    label: const Text('Excel'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Pass context to the controller method
-                      controller.downloadAllOrdersDataAsExcel(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.grid_on),
+                      label: const Text('Excel'),
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              controller.downloadAllOrdersDataAsExcel(context);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.share),
-                    label: const Text('Share Excel'),
-                    onPressed: () {
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Export by Salesperson
+              const Text(
+                'Export by Salesperson',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 10),
+              Obx(
+                () => DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    labelText: 'Select Salesperson',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  value: null,
+                  items: controller.availableSalespeople.map((salesperson) {
+                    return DropdownMenuItem(
+                      value: salesperson,
+                      child: Text(
+                        salesperson,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
                       Navigator.pop(context);
-                      // Pass context to the controller method
-                      controller.shareAllOrdersDataAsExcel(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Colors.green, // Distinct color for sharing
-                      foregroundColor: Colors.white,
+                      showModalBottomSheet(
+                        context: context,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                        ),
+                        builder: (_) {
+                          return Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Export $value\'s Orders',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        icon: const Icon(Icons.picture_as_pdf),
+                                        label: const Text('PDF'),
+                                        onPressed: controller.isLoading.value
+                                            ? null
+                                            : () {
+                                                Navigator.pop(context);
+                                                controller
+                                                    .downloadSingleSalesmanAsPDF(
+                                                      context,
+                                                      value,
+                                                    );
+                                              },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.redAccent,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        icon: const Icon(Icons.grid_on),
+                                        label: const Text('Excel'),
+                                        onPressed: controller.isLoading.value
+                                            ? null
+                                            : () {
+                                                Navigator.pop(context);
+                                                controller
+                                                    .downloadSingleSalesmanAsExcel(
+                                                      context,
+                                                      value,
+                                                    );
+                                              },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blueAccent,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    }
+                  },
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Share Options
+              const Text(
+                'Share Filtered Orders',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.share),
+                      label: const Text('Share PDF'),
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              controller.shareAllOrdersDataAsPDF(context);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.share),
+                      label: const Text('Share Excel'),
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              controller.shareAllOrdersDataAsExcel(context);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ],

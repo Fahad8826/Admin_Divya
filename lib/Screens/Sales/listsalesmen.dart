@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:admin/Screens/Sales/salescontroller.dart';
 import 'package:admin/Screens/Sales/individual_user_details.dart';
@@ -68,7 +67,7 @@ class SalesManagementPage extends StatelessWidget {
           context,
           MaterialPageRoute(builder: (context) => const AddUserPage()),
         ),
-        backgroundColor: Colors.blue[700],
+        backgroundColor: Color.fromARGB(255, 209, 52, 67),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add, size: 20),
         label: const Text(
@@ -96,12 +95,18 @@ class SalesManagementPage extends StatelessWidget {
               controller: controller.searchController,
               decoration: InputDecoration(
                 hintText: 'Search salespeople...',
-                prefixIcon: Icon(Icons.search, color: Colors.blue),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Color.fromARGB(255, 209, 52, 67),
+                ),
                 suffixIcon: ValueListenableBuilder<String>(
                   valueListenable: controller.searchQuery,
                   builder: (context, query, _) => query.isNotEmpty
                       ? IconButton(
-                          icon: Icon(Icons.clear, color: Colors.blue),
+                          icon: Icon(
+                            Icons.clear,
+                            color: Color.fromARGB(255, 209, 52, 67),
+                          ),
                           onPressed: () => controller.searchController.clear(),
                         )
                       : const SizedBox.shrink(),
@@ -114,7 +119,7 @@ class SalesManagementPage extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.blue[700]!, width: 2),
+                  borderSide: BorderSide(color: Colors.grey, width: 2),
                 ),
               ),
             ),
@@ -146,14 +151,14 @@ class SalesManagementPage extends StatelessWidget {
       label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
       selected: currentFilter == value,
       onSelected: (selected) => controller.updateFilter(value),
-      selectedColor: Colors.blue[100],
+      selectedColor: Color.fromARGB(255, 209, 52, 67),
       backgroundColor: Colors.grey[100],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.grey[300]!),
+        side: BorderSide(color: Colors.white),
       ),
       labelStyle: TextStyle(
-        color: currentFilter == value ? Colors.blue[900] : Colors.grey[700],
+        color: currentFilter == value ? Colors.white : Colors.grey[700],
       ),
     );
   }

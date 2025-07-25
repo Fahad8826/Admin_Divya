@@ -1,7 +1,13 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lottie/lottie.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AdminAudioListenPage extends StatefulWidget {
   final String userId;
@@ -17,7 +23,7 @@ class _AdminAudioListenPageState extends State<AdminAudioListenPage> {
   RTCPeerConnection? _peerConnection;
   MediaStream? _remoteStream;
   final _firestore = FirebaseFirestore.instance;
-
+  static const _channel = MethodChannel('audio_record_channel');
   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
   @override
@@ -27,6 +33,7 @@ class _AdminAudioListenPageState extends State<AdminAudioListenPage> {
     _setupConnection();
   }
 
+  //listening method.
   Future<void> _setupConnection() async {
     final config = {
       'iceServers': [
@@ -135,6 +142,84 @@ class _AdminAudioListenPageState extends State<AdminAudioListenPage> {
     });
   }
 
+  //storing methode call.
+  Future<void> startRecording() async {
+    final micStatus = await Permission.microphone.request();
+
+    // Handle Android version-specific permissions
+    final androidInfo = await DeviceInfoPlugin().androidInfo;
+    final sdkInt = androidInfo.version.sdkInt;
+
+    PermissionStatus storageStatus;
+    if (Platform.isAndroid && sdkInt >= 33) {
+      storageStatus = await Permission.audio.request(); // Android 13+
+    } else {
+      storageStatus = await Permission.storage
+          .request(); // Android 12 and below
+    }
+
+    // 🔌 Bluetooth (Android 12+)
+    PermissionStatus bluetoothStatus = PermissionStatus.granted;
+    if (Platform.isAndroid && sdkInt >= 31) {
+      bluetoothStatus = await Permission.bluetoothConnect.request();
+    }
+
+    print('🎤 Microphone permission: $micStatus');
+    print('💽 Storage/Audio permission: $storageStatus');
+    print('🎧 Bluetooth permission: $bluetoothStatus');
+
+    // All permissions granted
+    if (micStatus.isGranted &&
+        storageStatus.isGranted &&
+        bluetoothStatus.isGranted) {
+      final savePath = await _getSavePath();
+      print("💾 Saving to: $savePath");
+      await _channel.invokeMethod("startRecording", {"path": savePath});
+    }
+    // Any permission permanently denied
+    else if (micStatus.isPermanentlyDenied ||
+        storageStatus.isPermanentlyDenied ||
+        bluetoothStatus.isPermanentlyDenied) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("Permission Required"),
+          content: const Text(
+            "Please grant microphone, storage/audio, and Bluetooth permissions from settings.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                openAppSettings();
+                Navigator.of(context).pop();
+              },
+              child: const Text("Open Settings"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
+            ),
+          ],
+        ),
+      );
+    }
+    // Denied (but not permanently)
+    else {
+      print("🙅 Permissions denied (not permanently)");
+    }
+  }
+
+  Future<void> stopRecording() async {
+    await _channel.invokeMethod("stopRecording");
+    print("Recording stopped.");
+  }
+
+  Future<String> _getSavePath() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return "${dir.path}/my_audio.mp3";
+  }
+
   @override
   void dispose() {
     // 🔴 Mark as disconnected in Firestore
@@ -146,7 +231,7 @@ class _AdminAudioListenPageState extends State<AdminAudioListenPage> {
           print("📡 Status updated to disconnected");
         })
         .catchError((error) {
-          print("⚠ Failed to update status: $error");
+          print("⚠️ Failed to update status: $error");
         });
 
     _remoteRenderer.dispose();
@@ -162,7 +247,7 @@ class _AdminAudioListenPageState extends State<AdminAudioListenPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text("🎙 Admin Audio Listener"),
+          const Text("🎙️ Admin Audio Listener"),
           const SizedBox(height: 20),
           _remoteStream != null
               ? Center(child: Lottie.asset('assets/lottie/microphone.json'))
@@ -175,6 +260,15 @@ class _AdminAudioListenPageState extends State<AdminAudioListenPage> {
 
           // 🔈 This invisible widget plays the audio
           SizedBox(width: 0, height: 0, child: RTCVideoView(_remoteRenderer)),
+
+          ElevatedButton(
+            onPressed: () => startRecording(),
+            child: const Text("Start Recording"),
+          ),
+          ElevatedButton(
+            onPressed: () => stopRecording(),
+            child: const Text("Stop Recording"),
+          ),
         ],
       ),
     );
