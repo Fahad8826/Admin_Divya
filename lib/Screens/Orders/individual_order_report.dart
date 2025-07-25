@@ -48,10 +48,10 @@ class IndividualOrderReportPage extends StatelessWidget {
                     color: (order['Cancel'] == true)
                         ? const Color.fromARGB(
                             255,
-                            255,
-                            111,
-                            133,
-                          ) // light reddish background if canceled
+                            253,
+                            81,
+                            81,
+                          ) // light red for cancelled orders
                         : Colors.white, // default background
                     borderRadius: BorderRadius.circular(12),
                   ),

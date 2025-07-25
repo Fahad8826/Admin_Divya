@@ -23,25 +23,40 @@ class IndividualUserDetails extends StatefulWidget {
   State<IndividualUserDetails> createState() => _IndividualUserDetailsState();
 }
 
-class _IndividualUserDetailsState extends State<IndividualUserDetails>
-    with SingleTickerProviderStateMixin {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final ImagePicker _picker = ImagePicker();
+class _IndividualUserDetailsState extends State<IndividualUserDetails> {
+  final _firestore = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
+  final _storage = FirebaseStorage.instance;
+  final _picker = ImagePicker();
   final _formKey = GlobalKey<FormState>();
-  final AddUserController _addUserController = Get.put(AddUserController());
+  final _controller = Get.put(AddUserController());
 
-  late TextEditingController _nameController;
-  late TextEditingController _emailController;
-  late TextEditingController _ageController;
-  late TextEditingController _phoneController;
-  late TextEditingController _addressController;
-  late TextEditingController _passwordController;
-  late TextEditingController _placeController;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  // Define the custom icon color
+  static const Color _iconColor = Color.fromARGB(255, 209, 52, 67);
+  static const Color _textColor = Color(0xFF1A1A1A);
 
+  // Controllers
+  late final _nameController = TextEditingController(
+    text: widget.userData['name'],
+  );
+  late final _emailController = TextEditingController(
+    text: widget.userData['email'],
+  );
+  late final _ageController = TextEditingController(
+    text: widget.userData['age']?.toString() ?? '',
+  );
+  late final _phoneController = TextEditingController(
+    text: widget.userData['phone'],
+  );
+  late final _addressController = TextEditingController(
+    text: widget.userData['address'],
+  );
+  late final _passwordController = TextEditingController();
+  late final _placeController = TextEditingController(
+    text: widget.userData['place'] ?? '',
+  );
+
+  // State variables
   bool _isActive = true;
   String? _imageUrl;
   File? _selectedImage;
@@ -55,60 +70,15 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
   @override
   void initState() {
     super.initState();
-    _initializeControllers();
-    _initializeAnimation();
+    _initializeData();
     _fetchLocationData();
   }
 
-  void _initializeControllers() {
-    _nameController = TextEditingController(text: widget.userData['name']);
-    _emailController = TextEditingController(text: widget.userData['email']);
-    _ageController = TextEditingController(
-      text: widget.userData['age']?.toString() ?? '',
-    );
-    _phoneController = TextEditingController(text: widget.userData['phone']);
-    _addressController = TextEditingController(
-      text: widget.userData['address'],
-    );
-    _passwordController = TextEditingController();
-    _placeController = TextEditingController(
-      text: widget.userData['place'] ?? '',
-    );
+  void _initializeData() {
     _selectedGender = widget.userData['gender'];
     _isActive = widget.userData['isActive'] ?? true;
     _imageUrl = widget.userData['imageUrl'];
     _selectedRole = widget.userData['role'] ?? 'salesmen';
-  }
-
-  void _initializeAnimation() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-  }
-
-  Future<void> _fetchLocationData() async {
-    setState(() => _isLoading = true);
-    try {
-      final locationData = await _addUserController.getUserLocationData(
-        widget.userId,
-      );
-      if (mounted) {
-        setState(() {
-          _locationData = locationData;
-        });
-      }
-    } catch (e) {
-      _showErrorDialog('Error fetching location: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 
   @override
@@ -120,93 +90,83 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
     _addressController.dispose();
     _passwordController.dispose();
     _placeController.dispose();
-    _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchLocationData() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final locationData = await _controller.getUserLocationData(widget.userId);
+      if (mounted) setState(() => _locationData = locationData);
+    } catch (e) {
+      _showError('Error fetching location: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _pickImage() async {
     try {
-      final XFile? image = await _picker.pickImage(
+      final image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
+        maxWidth: 600, // Smaller max width
+        maxHeight: 600, // Smaller max height
+        imageQuality: 70, // Slightly reduced quality for smaller size
       );
-
-      if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
-      }
+      if (image != null) setState(() => _selectedImage = File(image.path));
     } catch (e) {
-      _showErrorDialog('Error picking image: $e');
+      _showError('Error picking image: $e');
     }
   }
 
-  Future<String?> _uploadImage(String userId) async {
+  Future<String?> _uploadImage() async {
     if (_selectedImage == null) return _imageUrl;
-
     try {
-      final ref = _storage.ref().child('salesperson_images/$userId.jpg');
-      final uploadTask = ref.putFile(_selectedImage!);
-      final snapshot = await uploadTask;
+      final ref = _storage.ref().child(
+        'salesperson_images/${widget.userId}.jpg',
+      );
+      final snapshot = await ref.putFile(_selectedImage!);
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      _showErrorDialog('Error uploading image: $e');
+      _showError('Error uploading image: $e');
       return _imageUrl;
     }
   }
 
-  String? _validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Email is required';
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value))
-      return 'Enter valid email';
-    return null;
-  }
-
-  String? _validatePhone(String? value) {
-    if (value == null || value.trim().isEmpty)
-      return 'Phone number is required';
-    if (value.length < 10) return 'Enter valid phone number';
-    return null;
-  }
-
-  String? _validateAge(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Age is required';
-    final age = int.tryParse(value);
-    if (age == null || age < 18 || age > 65) return 'Age must be 18-65';
-    return null;
-  }
-
-  String? _validateName(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Name is required';
-    if (value.trim().length < 2) return 'Name must be at least 2 characters';
-    return null;
-  }
-
-  String? _validatePlace(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Place is required';
-    if (value.trim().length < 2) return 'Place must be at least 2 characters';
-    return null;
-  }
-
-  String? _validateRole(String? value) {
-    if (value == null) return 'Role is required';
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    if (value != null && value.isNotEmpty && value.length < 6)
-      return 'Password must be at least 6 characters';
+  // Validation methods
+  String? _validate(String? value, String field, {int? minLength}) {
+    if (field == 'Password') {
+      if (value?.isEmpty ?? true) return null; // Password is optional
+      if (value!.trim().length < 6) {
+        return 'Password must be at least 6 characters';
+      }
+    } else {
+      if (value?.trim().isEmpty ?? true) return '$field is required';
+      if (minLength != null && value!.trim().length < minLength) {
+        return '$field must be at least $minLength characters';
+      }
+      if (field == 'Email' &&
+          !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
+        return 'Enter valid email';
+      }
+      if (field == 'Age') {
+        final age = int.tryParse(value!);
+        if (age == null || age < 18 || age > 65) return 'Age must be 18-65';
+      }
+      if (field == 'Phone' && value!.length < 10) {
+        return 'Enter valid phone number';
+      }
+    }
     return null;
   }
 
   Future<void> _updateUser() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {
+      // Check phone uniqueness
       final phoneQuery = await _firestore
           .collection('users')
           .where('phone', isEqualTo: _phoneController.text.trim())
@@ -214,14 +174,14 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
 
       if (phoneQuery.docs.isNotEmpty &&
           phoneQuery.docs.first.id != widget.userId) {
-        _showErrorDialog('Phone number is already in use');
-        setState(() => _isLoading = false);
+        _showError('Phone number is already in use');
+        if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      final newImageUrl = await _uploadImage(widget.userId);
+      final newImageUrl = await _uploadImage();
 
-      final updatedData = {
+      await _firestore.collection('users').doc(widget.userId).update({
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'age': int.tryParse(_ageController.text.trim()) ?? 0,
@@ -233,12 +193,7 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
         'isActive': _isActive,
         'imageUrl': newImageUrl,
         'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      await _firestore
-          .collection('users')
-          .doc(widget.userId)
-          .update(updatedData);
+      });
 
       if (_passwordController.text.trim().isNotEmpty) {
         await _auth.currentUser?.updatePassword(
@@ -251,17 +206,17 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('User updated successfully'),
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                const Text('User updated successfully'),
               ],
             ),
-            backgroundColor: Colors.green[600],
+            backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
         );
@@ -272,54 +227,35 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
         });
       }
     } catch (e) {
-      if (mounted) {
-        _showErrorDialog('Error updating user: $e');
-      }
+      _showError('Error updating user: $e');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showErrorDialog(String message) {
-    final screenSize = MediaQuery.of(context).size;
-    final isTablet = screenSize.width > 600;
-
+  void _showError(String message) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
           children: [
-            Icon(
-              Icons.error_outline,
-              color: Colors.red[600],
-              size: isTablet ? 32 : 28,
-            ),
-            SizedBox(width: isTablet ? 16 : 12),
+            Icon(Icons.error_outline, color: _iconColor), // Use custom color
+            SizedBox(width: 12),
             Text(
               'Error',
-              style: TextStyle(color: Colors.red, fontSize: isTablet ? 20 : 18),
-            ),
+              style: TextStyle(color: _iconColor),
+            ), // Use custom color
           ],
         ),
-        content: Text(message, style: TextStyle(fontSize: isTablet ? 16 : 14)),
+        content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.red[50],
-              foregroundColor: Colors.red[700],
-              padding: EdgeInsets.symmetric(
-                horizontal: isTablet ? 32 : 24,
-                vertical: isTablet ? 16 : 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text('OK', style: TextStyle(fontSize: isTablet ? 16 : 14)),
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: _iconColor),
+            ), // Use custom color
           ),
         ],
       ),
@@ -328,212 +264,147 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isTablet = screenSize.width > 600;
-    final horizontalPadding = isTablet ? 32.0 : 20.0;
-
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: _buildAppBar(isTablet),
-      body: _isLoading
-          ? _buildLoadingIndicator(isTablet)
-          : _buildBody(isTablet, horizontalPadding),
-      floatingActionButton: _isEditing
-          ? _buildFloatingActionButton(isTablet)
-          : null,
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(bool isTablet) {
-    return AppBar(
       backgroundColor: Colors.white,
-      foregroundColor: Colors.grey[800],
-      title: Text(
-        _isEditing ? 'Edit User' : 'User Details',
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: isTablet ? 24 : 20,
+      appBar: AppBar(
+        title: Text(
+          _isEditing ? 'Edit User' : 'User Details',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: _textColor,
+          ),
         ),
-      ),
-      elevation: 0,
-      centerTitle: true,
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: Colors.grey[200]),
-      ),
-      actions: [
-        if (!_isEditing)
-          IconButton(
-            icon: Icon(
-              Icons.edit,
-              color: Colors.blue[600],
-              size: isTablet ? 28 : 24,
+        backgroundColor: Colors.white,
+        foregroundColor:
+            _textColor, // Use custom text color for general foreground
+        elevation: 1,
+        actions: [
+          if (!_isEditing)
+            IconButton(
+              icon: const Icon(
+                Icons.edit,
+                color: _iconColor,
+              ), // Use custom color
+              onPressed: () => setState(() => _isEditing = true),
             ),
-            onPressed: () => setState(() => _isEditing = true),
-            tooltip: 'Edit User',
-          ),
-
-        SizedBox(width: isTablet ? 16 : 8),
-      ],
-    );
-  }
-
-  Widget _buildLoadingIndicator(bool isTablet) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: isTablet ? 60 : 40,
-            height: isTablet ? 60 : 40,
-            child: const CircularProgressIndicator(strokeWidth: 3),
-          ),
-          SizedBox(height: isTablet ? 24 : 16),
-          Text(
-            'Processing...',
-            style: TextStyle(fontSize: isTablet ? 18 : 16, color: Colors.grey),
-          ),
         ],
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(),
+      floatingActionButton: _isEditing ? _buildSaveButton() : null,
     );
   }
 
-  Widget _buildBody(bool isTablet, double horizontalPadding) {
-    final userRole = widget.userData['role'];
-    final maxWidth = isTablet ? 800.0 : double.infinity;
-
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Center(
-        child: Container(
-          constraints: BoxConstraints(maxWidth: maxWidth),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(horizontalPadding),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildProfileSection(isTablet),
-                  SizedBox(height: isTablet ? 40 : 32),
-                  _buildPersonalInfoSection(isTablet),
-                  SizedBox(height: isTablet ? 32 : 24),
-                  _buildContactInfoSection(isTablet),
-                  SizedBox(height: isTablet ? 32 : 24),
-                  if (userRole != 'maker') _buildLocationSection(isTablet),
-                  if (userRole != 'maker') SizedBox(height: isTablet ? 32 : 24),
-                  _buildSecuritySection(isTablet),
-                  SizedBox(height: isTablet ? 32 : 24),
-                  _buildStatusSection(isTablet),
-                  SizedBox(height: isTablet ? 32 : 20),
-                  if (userRole != 'maker')
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: isTablet ? 60 : 50),
-                        child: SizedBox(
-                          width: isTablet ? 200 : 150,
-                          height: isTablet ? 50 : 40,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => AdminAudioListenPage(
-                                    userId: widget.userId,
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: Icon(
-                              Icons.mic_none_outlined,
-                              size: isTablet ? 28 : 24,
-                            ),
-                            label: Text(
-                              "Monitor",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: isTablet ? 20 : 18,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildProfileSection(),
+            const SizedBox(height: 24),
+            _buildInfoCard('Personal Information', Icons.person, [
+              _buildTextField(
+                _nameController,
+                'Name',
+                Icons.person_outline,
+                validator: (v) => _validate(v, 'Name', minLength: 2),
               ),
-            ),
-          ),
+              _buildTextField(
+                _ageController,
+                'Age',
+                Icons.cake_outlined,
+                keyboardType: TextInputType.number,
+                validator: (v) => _validate(v, 'Age'),
+              ),
+              _buildDropdown('Gender', _selectedGender, [
+                'Male',
+                'Female',
+                'Other',
+              ], (v) => setState(() => _selectedGender = v)),
+              _buildDropdown('Role', _selectedRole, [
+                'salesmen',
+                'maker',
+              ], (v) => setState(() => _selectedRole = v)),
+              _buildTextField(
+                _placeController,
+                'Place',
+                Icons.place_outlined,
+                validator: (v) => _validate(v, 'Place', minLength: 2),
+              ),
+              _buildTextField(
+                _addressController,
+                'Address',
+                Icons.location_on_outlined,
+                maxLines: 2,
+                validator: (v) => _validate(v, 'Address'),
+              ),
+            ]),
+            const SizedBox(height: 24),
+            _buildInfoCard('Contact Information', Icons.contact_mail, [
+              _buildTextField(
+                _emailController,
+                'Email',
+                Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+                validator: (v) => _validate(v, 'Email'),
+              ),
+              _buildTextField(
+                _phoneController,
+                'Phone',
+                Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+                validator: (v) => _validate(v, 'Phone'),
+              ),
+            ]),
+            if (widget.userData['role'] != 'maker') ...[
+              const SizedBox(height: 24),
+              _buildLocationCard(),
+            ],
+            if (_isEditing) ...[
+              const SizedBox(height: 24),
+              _buildSecurityCard(),
+            ],
+            const SizedBox(height: 24),
+            _buildStatusCard(),
+            if (widget.userData['role'] != 'maker') ...[
+              const SizedBox(height: 32),
+              _buildMonitorButton(),
+            ],
+            const SizedBox(height: 80),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileSection(bool isTablet) {
-    final profileImageSize = isTablet ? 140.0 : 100.0;
-    final cameraIconSize = isTablet ? 44.0 : 32.0;
-    final nameTextSize = isTablet ? 28.0 : 22.0;
-    final statusTextSize = isTablet ? 14.0 : 12.0;
+  Widget _buildProfileSection() {
+    const double avatarRadius = 50.0;
 
     return Center(
       child: Column(
         children: [
           Stack(
             children: [
-              GestureDetector(
-                onTap: _isEditing ? _pickImage : null,
-                child: Container(
-                  width: profileImageSize,
-                  height: profileImageSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.grey[200],
-                    border: Border.all(color: Colors.grey[300]!, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: _selectedImage != null
-                      ? ClipOval(
-                          child: Image.file(
-                            _selectedImage!,
-                            width: profileImageSize,
-                            height: profileImageSize,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : _imageUrl != null
-                      ? ClipOval(
-                          child: Image.network(
-                            _imageUrl!,
-                            width: profileImageSize,
-                            height: profileImageSize,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.person,
-                                size: profileImageSize * 0.5,
-                                color: Colors.grey[500],
-                              );
-                            },
-                          ),
-                        )
-                      : Icon(
-                          Icons.person,
-                          size: profileImageSize * 0.5,
-                          color: Colors.grey[500],
-                        ),
-                ),
+              CircleAvatar(
+                radius: avatarRadius,
+                backgroundColor: Colors.grey[200],
+                backgroundImage: _selectedImage != null
+                    ? FileImage(_selectedImage!) as ImageProvider
+                    : _imageUrl != null
+                    ? NetworkImage(_imageUrl!)
+                    : null,
+                child: _selectedImage == null && _imageUrl == null
+                    ? Icon(
+                        Icons.person,
+                        size: avatarRadius * 0.8,
+                        color: Colors.grey,
+                      )
+                    : null,
               ),
               if (_isEditing)
                 Positioned(
@@ -541,29 +412,12 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
                   right: 0,
                   child: GestureDetector(
                     onTap: _pickImage,
-                    child: Container(
-                      width: cameraIconSize,
-                      height: cameraIconSize,
-                      decoration: BoxDecoration(
-                        color: Color.fromARGB(255, 209, 52, 67),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color.fromARGB(
-                              255,
-                              209,
-                              52,
-                              67,
-                            ).withOpacity(0.3),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
+                    child: const CircleAvatar(
+                      radius: 18,
+                      backgroundColor: _iconColor, // Use custom color
                       child: Icon(
                         Icons.camera_alt,
-                        size: cameraIconSize * 0.5,
+                        size: 18,
                         color: Colors.white,
                       ),
                     ),
@@ -571,36 +425,24 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
                 ),
             ],
           ),
-          SizedBox(height: isTablet ? 24 : 16),
+          const SizedBox(height: 16),
           Text(
             _nameController.text.isNotEmpty ? _nameController.text : 'No Name',
-            style: TextStyle(
-              fontSize: nameTextSize,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: isTablet ? 12 : 8),
+          const SizedBox(height: 8),
           Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isTablet ? 16 : 10,
-              vertical: isTablet ? 8 : 4,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: _isActive ? Colors.green[50] : Colors.red[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _isActive ? Colors.green[200]! : Colors.red[200]!,
-                width: 1,
-              ),
+              color: _isActive ? Colors.green[100] : Colors.red[100],
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               _isActive ? 'Active' : 'Inactive',
               style: TextStyle(
                 color: _isActive ? Colors.green[700] : Colors.red[700],
-                fontWeight: FontWeight.w500,
-                fontSize: statusTextSize,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ),
@@ -609,346 +451,57 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
     );
   }
 
-  Widget _buildPersonalInfoSection(bool isTablet) {
-    return _buildSection(
-      title: 'Personal Information',
-      icon: Icons.person_outline,
-      isTablet: isTablet,
-      children: [
-        if (isTablet)
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: _buildEnhancedTextField(
-                  controller: _nameController,
-                  label: 'Full Name',
-                  icon: Icons.person,
-                  validator: _validateName,
-                  isTablet: isTablet,
-                ),
-              ),
-              SizedBox(width: isTablet ? 24 : 16),
-              Expanded(
-                child: _buildEnhancedTextField(
-                  controller: _ageController,
-                  label: 'Age',
-                  icon: Icons.cake,
-                  keyboardType: TextInputType.number,
-                  validator: _validateAge,
-                  isTablet: isTablet,
-                ),
-              ),
-            ],
-          )
-        else ...[
-          _buildEnhancedTextField(
-            controller: _nameController,
-            label: 'Full Name',
-            icon: Icons.person,
-            validator: _validateName,
-            isTablet: isTablet,
-          ),
-          SizedBox(height: isTablet ? 24 : 16),
-          _buildEnhancedTextField(
-            controller: _ageController,
-            label: 'Age',
-            icon: Icons.cake,
-            keyboardType: TextInputType.number,
-            validator: _validateAge,
-            isTablet: isTablet,
-          ),
-        ],
-        SizedBox(height: isTablet ? 24 : 16),
-        if (isTablet)
-          Row(
-            children: [
-              Expanded(child: _buildEnhancedGenderField(isTablet)),
-              SizedBox(width: isTablet ? 24 : 16),
-              Expanded(child: _buildEnhancedRoleField(isTablet)),
-            ],
-          )
-        else ...[
-          _buildEnhancedGenderField(isTablet),
-          SizedBox(height: isTablet ? 24 : 16),
-          _buildEnhancedRoleField(isTablet),
-        ],
-        SizedBox(height: isTablet ? 24 : 16),
-        _buildEnhancedTextField(
-          controller: _placeController,
-          label: 'Place',
-          icon: Icons.place_outlined,
-          validator: _validatePlace,
-          isTablet: isTablet,
-        ),
-        SizedBox(height: isTablet ? 24 : 16),
-        _buildEnhancedTextField(
-          controller: _addressController,
-          label: 'Address',
-          icon: Icons.location_on,
-          maxLines: 3,
-          validator: (value) => value == null || value.trim().isEmpty
-              ? 'Address is required'
-              : null,
-          isTablet: isTablet,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContactInfoSection(bool isTablet) {
-    return _buildSection(
-      title: 'Contact Information',
-      icon: Icons.contact_phone,
-      isTablet: isTablet,
-      children: [
-        if (isTablet)
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: _buildEnhancedTextField(
-                  controller: _emailController,
-                  label: 'Email Address',
-                  icon: Icons.email,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: _validateEmail,
-                  isTablet: isTablet,
-                ),
-              ),
-              SizedBox(width: isTablet ? 24 : 16),
-              Expanded(
-                child: _buildEnhancedTextField(
-                  controller: _phoneController,
-                  label: 'Phone Number',
-                  icon: Icons.phone,
-                  keyboardType: TextInputType.phone,
-                  validator: _validatePhone,
-                  isTablet: isTablet,
-                ),
-              ),
-            ],
-          )
-        else ...[
-          _buildEnhancedTextField(
-            controller: _emailController,
-            label: 'Email Address',
-            icon: Icons.email,
-            keyboardType: TextInputType.emailAddress,
-            validator: _validateEmail,
-            isTablet: isTablet,
-          ),
-          SizedBox(height: isTablet ? 24 : 16),
-          _buildEnhancedTextField(
-            controller: _phoneController,
-            label: 'Phone Number',
-            icon: Icons.phone,
-            keyboardType: TextInputType.phone,
-            validator: _validatePhone,
-            isTablet: isTablet,
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildLocationSection(bool isTablet) {
-    final timestamp = _locationData?['lastLocationUpdate'];
-    String formattedDate = 'Not available';
-
-    if (timestamp != null && timestamp is Timestamp) {
-      final dateTime = timestamp.toDate(); // Convert to DateTime
-      formattedDate = DateFormat(
-        "MMMM d, y 'at' h:mm:ss a 'UTC+5:30'",
-      ).format(dateTime.toUtc().add(const Duration(hours: 5, minutes: 30)));
-    }
-
-    return _buildSection(
-      title: 'Location Information',
-      icon: Icons.map,
-      isTablet: isTablet,
-      children: [
-        _buildInfoRow(
-          label: 'Reverse Geocoded Address',
-          value: _locationData?['reverseGeocodedAddress'] ?? 'Not available',
-          isTablet: isTablet,
-        ),
-        SizedBox(height: isTablet ? 24 : 16),
-        _buildInfoRow(
-          label: 'Coordinates',
-          value:
-              _locationData != null &&
-                  _locationData!['latitude'] != null &&
-                  _locationData!['longitude'] != null
-              ? 'Lat: ${_locationData!['latitude']}, Lng: ${_locationData!['longitude']}'
-              : 'Not available',
-          isTablet: isTablet,
-        ),
-        SizedBox(height: isTablet ? 24 : 16),
-        _buildInfoRow(
-          label: 'Last Location Update',
-          value: formattedDate,
-          isTablet: isTablet,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSecuritySection(bool isTablet) {
-    if (!_isEditing) return const SizedBox.shrink();
-
-    return _buildSection(
-      title: 'Security',
-      icon: Icons.security,
-      isTablet: isTablet,
-      children: [
-        _buildEnhancedTextField(
-          controller: _passwordController,
-          label: 'New Password (optional)',
-          icon: Icons.lock,
-          obscureText: !_passwordVisible,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _passwordVisible ? Icons.visibility_off : Icons.visibility,
-              color: Colors.grey[600],
-              size: isTablet ? 28 : 24,
-            ),
-            onPressed: () {
-              setState(() {
-                _passwordVisible = !_passwordVisible;
-              });
-            },
-          ),
-          validator: _validatePassword,
-          isTablet: isTablet,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatusSection(bool isTablet) {
-    return _buildSection(
-      title: 'Account Status',
-      icon: Icons.settings,
-      isTablet: isTablet,
-      children: [
-        Container(
-          padding: EdgeInsets.all(isTablet ? 20 : 16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                _isActive ? Icons.check_circle : Icons.cancel,
-                color: _isActive ? Colors.green[600] : Colors.red[600],
-                size: isTablet ? 28 : 24,
-              ),
-              SizedBox(width: isTablet ? 16 : 12),
-              Expanded(
-                child: Text(
-                  'Account Status',
-                  style: TextStyle(
-                    fontSize: isTablet ? 18 : 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (_isEditing)
-                Switch(
-                  value: _isActive,
-                  onChanged: (value) {
-                    setState(() {
-                      _isActive = value;
-                    });
-                  },
-                  activeColor: Colors.green[600],
-                )
-              else
-                Text(
-                  _isActive ? 'Active' : 'Inactive',
-                  style: TextStyle(
-                    color: _isActive ? Colors.green[600] : Colors.red[600],
-                    fontWeight: FontWeight.w600,
-                    fontSize: isTablet ? 16 : 14,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSection({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-    required bool isTablet,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            spreadRadius: 0,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  Widget _buildInfoCard(String title, IconData icon, List<Widget> children) {
+    return Card(
+      margin: EdgeInsets.zero,
+      color: Colors.white, // Explicitly set card color to white
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.grey[200]!),
       ),
       child: Padding(
-        padding: EdgeInsets.all(isTablet ? 24 : 20),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(isTablet ? 12 : 8),
-                  decoration: BoxDecoration(
-                    color: Color.fromARGB(255, 209, 52, 67),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: isTablet ? 28 : 24,
-                  ),
-                ),
-                SizedBox(width: isTablet ? 16 : 12),
+                Icon(icon, color: _iconColor), // Use custom color
+                const SizedBox(width: 10),
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: isTablet ? 22 : 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: isTablet ? 24 : 20),
-            ...children,
+            const Divider(height: 24, thickness: 0.5),
+            ...children
+                .map(
+                  (child) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: child,
+                  ),
+                )
+                .toList(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildEnhancedTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    String? Function(String?)? validator,
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
     TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     Widget? suffixIcon,
     int maxLines = 1,
-    required bool isTablet,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -957,257 +510,302 @@ class _IndividualUserDetailsState extends State<IndividualUserDetails>
       obscureText: obscureText,
       maxLines: maxLines,
       validator: validator,
-      style: TextStyle(
-        fontSize: isTablet ? 16 : 14,
-        color: _isEditing ? Colors.black87 : Colors.grey[600],
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: _iconColor), // Use custom color
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: _isEditing ? Colors.grey[50] : Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: _iconColor,
+            width: 2,
+          ), // Use custom color for focused border
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: 10,
+        ),
       ),
+    );
+  }
+
+  Widget _buildDropdown(
+    String label,
+    String? value,
+    List<String> items,
+    ValueChanged<String?> onChanged,
+  ) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      items: items
+          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+          .toList(),
+      onChanged: _isEditing ? onChanged : null,
+      validator: (v) => v == null ? 'Please select $label' : null,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(
-          icon,
-          color: _isEditing
-              ? Color.fromARGB(255, 209, 52, 67)
-              : Colors.grey[400],
-          size: isTablet ? 24 : 20,
-        ),
-        suffixIcon: suffixIcon,
-        labelStyle: TextStyle(
-          color: _isEditing
-              ? Color.fromARGB(255, 209, 52, 67)
-              : Colors.grey[500],
-          fontSize: isTablet ? 16 : 14,
+          label == 'Gender' ? Icons.person_outline : Icons.work_outline,
+          color: _iconColor, // Use custom color
         ),
         filled: true,
-        fillColor: _isEditing ? Colors.white : Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
+        fillColor: _isEditing ? Colors.grey[50] : Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey[300]!),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-            color: Color.fromARGB(255, 209, 52, 67),
+            color: _iconColor,
             width: 2,
-          ),
+          ), // Use custom color for focused border
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red[600]!, width: 2),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[200]!),
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 16 : 12,
-          vertical: isTablet ? 16 : 12,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: 10,
         ),
       ),
     );
   }
 
-  Widget _buildEnhancedGenderField(bool isTablet) {
-    return DropdownButtonFormField<String>(
-      value: _selectedGender,
-      items: ['Male', 'Female', 'Other'].map((gender) {
-        return DropdownMenuItem(
-          value: gender,
-          child: Text(gender, style: TextStyle(fontSize: isTablet ? 16 : 14)),
-        );
-      }).toList(),
-      onChanged: _isEditing
-          ? (value) {
-              setState(() {
-                _selectedGender = value;
-              });
-            }
-          : null,
-      validator: (value) => value == null ? 'Please select gender' : null,
-      decoration: InputDecoration(
-        labelText: 'Gender',
-        prefixIcon: Icon(
-          Icons.person_outline,
-          color: _isEditing
-              ? Color.fromARGB(255, 209, 52, 67)
-              : Colors.grey[400],
-          size: isTablet ? 24 : 20,
-        ),
-        labelStyle: TextStyle(
-          color: _isEditing
-              ? Color.fromARGB(255, 209, 52, 67)
-              : Colors.grey[500],
-          fontSize: isTablet ? 16 : 14,
-        ),
-        filled: true,
-        fillColor: _isEditing ? Colors.white : Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Color.fromARGB(255, 209, 52, 67),
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red[600]!, width: 2),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[200]!),
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 16 : 12,
-          vertical: isTablet ? 16 : 12,
-        ),
-      ),
-    );
-  }
+  Widget _buildLocationCard() {
+    final timestamp = _locationData?['lastLocationUpdate'];
+    String formattedDate = 'Not available';
 
-  Widget _buildEnhancedRoleField(bool isTablet) {
-    return DropdownButtonFormField<String>(
-      value: _selectedRole,
-      items: ['salesmen', 'maker'].map((role) {
-        return DropdownMenuItem(
-          value: role,
-          child: Text(
-            role.toUpperCase(),
-            style: TextStyle(fontSize: isTablet ? 16 : 14),
-          ),
-        );
-      }).toList(),
-      onChanged: _isEditing
-          ? (value) {
-              setState(() {
-                _selectedRole = value;
-              });
-            }
-          : null,
-      validator: _validateRole,
-      decoration: InputDecoration(
-        labelText: 'Role',
-        prefixIcon: Icon(
-          Icons.work_outline,
-          color: _isEditing
-              ? Color.fromARGB(255, 209, 52, 67)
-              : Colors.grey[400],
-          size: isTablet ? 24 : 20,
-        ),
-        labelStyle: TextStyle(
-          color: _isEditing
-              ? Color.fromARGB(255, 209, 52, 67)
-              : Colors.grey[500],
-          fontSize: isTablet ? 16 : 14,
-        ),
-        filled: true,
-        fillColor: _isEditing ? Colors.white : Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Color.fromARGB(255, 209, 52, 67),
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red[600]!, width: 2),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[200]!),
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 16 : 12,
-          vertical: isTablet ? 16 : 12,
-        ),
-      ),
-    );
-  }
+    if (timestamp is Timestamp) {
+      formattedDate = DateFormat(
+        "MMM d, y 'at' h:mm a",
+      ).format(timestamp.toDate());
+    }
 
-  Widget _buildInfoRow({
-    required String label,
-    required String value,
-    required bool isTablet,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(isTablet ? 16 : 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
+    return Card(
+      margin: EdgeInsets.zero,
+      color: Colors.white, // Explicitly set card color to white
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
+        side: BorderSide(color: Colors.grey[200]!),
       ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.map_outlined, color: _iconColor), // Use custom color
+                SizedBox(width: 10),
+                Text(
+                  'Location Information',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const Divider(height: 24, thickness: 0.5),
+            _buildInfoRow(
+              'Address',
+              _locationData?['reverseGeocodedAddress'] ?? 'Not available',
+            ),
+            _buildInfoRow(
+              'Coordinates',
+              _locationData != null &&
+                      _locationData!['latitude'] != null &&
+                      _locationData!['longitude'] != null
+                  ? 'Lat: ${_locationData!['latitude'].toStringAsFixed(4)}, Lng: ${_locationData!['longitude'].toStringAsFixed(4)}'
+                  : 'Not available',
+            ),
+            _buildInfoRow('Last Update', formattedDate),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSecurityCard() {
+    return Card(
+      margin: EdgeInsets.zero,
+      color: Colors.white, // Explicitly set card color to white
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(
+                  Icons.security_outlined,
+                  color: _iconColor,
+                ), // Use custom color
+                SizedBox(width: 10),
+                Text(
+                  'Security',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const Divider(height: 24, thickness: 0.5),
+            _buildTextField(
+              _passwordController,
+              'New Password (optional)',
+              Icons.lock_outline,
+              obscureText: !_passwordVisible,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _passwordVisible ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey[600],
+                ),
+                onPressed: () =>
+                    setState(() => _passwordVisible = !_passwordVisible),
+              ),
+              validator: (v) => _validate(v, 'Password'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCard() {
+    return Card(
+      margin: EdgeInsets.zero,
+      color: Colors.white, // Explicitly set card color to white
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(
+                  Icons.settings_outlined,
+                  color: _iconColor,
+                ), // Use custom color
+                SizedBox(width: 10),
+                Text(
+                  'Account Status',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const Divider(height: 24, thickness: 0.5),
+            Row(
+              children: [
+                Icon(
+                  _isActive
+                      ? Icons.check_circle_outline
+                      : Icons.cancel_outlined,
+                  color: _isActive ? Colors.green[600] : Colors.red[600],
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Account Status')),
+                if (_isEditing)
+                  Switch(
+                    value: _isActive,
+                    onChanged: (value) => setState(() => _isActive = value),
+                    activeColor: Colors.green,
+                  )
+                else
+                  Text(
+                    _isActive ? 'Active' : 'Inactive',
+                    style: TextStyle(
+                      color: _isActive ? Colors.green[700] : Colors.red[700],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: isTablet ? 180 : 120,
+            width: 90,
             child: Text(
               label,
               style: TextStyle(
-                fontSize: isTablet ? 16 : 14,
                 fontWeight: FontWeight.w500,
                 color: Colors.grey[700],
               ),
             ),
           ),
-          SizedBox(width: isTablet ? 16 : 12),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: isTablet ? 16 : 14,
-                color: Colors.black87,
-              ),
-            ),
-          ),
+          const SizedBox(width: 16),
+          Expanded(child: Text(value)),
         ],
       ),
     );
   }
 
-  Widget _buildFloatingActionButton(bool isTablet) {
-    return FloatingActionButton.extended(
-      onPressed: _isLoading ? null : _updateUser,
-      backgroundColor: Color.fromARGB(255, 209, 52, 67),
-      foregroundColor: Colors.white,
-      icon: _isLoading
-          ? SizedBox(
-              width: isTablet ? 20 : 16,
-              height: isTablet ? 20 : 16,
-              child: const CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : Icon(Icons.save, size: isTablet ? 24 : 20),
-      label: Text(
-        _isLoading ? 'Saving...' : 'Save Changes',
-        style: TextStyle(
-          fontSize: isTablet ? 16 : 14,
-          fontWeight: FontWeight.w600,
+  Widget _buildMonitorButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AdminAudioListenPage(userId: widget.userId),
+          ),
+        ),
+        icon: const Icon(Icons.mic_none_outlined),
+        label: const Text(
+          'Monitor User Activity',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _iconColor, // Use custom color
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 2,
         ),
       ),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return FloatingActionButton.extended(
+      onPressed: _isLoading ? null : _updateUser,
+      backgroundColor: _iconColor, // Use custom color
+      icon: _isLoading
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation(Colors.white),
+              ),
+            )
+          : const Icon(Icons.save_outlined),
+      label: Text(_isLoading ? 'Saving...' : 'Save Changes'),
     );
   }
 }

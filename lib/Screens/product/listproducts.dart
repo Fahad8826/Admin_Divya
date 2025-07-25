@@ -10,6 +10,10 @@ class ProductListPage extends StatefulWidget {
 }
 
 class _ProductListPageState extends State<ProductListPage> {
+  // Define the custom icon/accent color and text color
+  static const Color _accentColor = Color.fromARGB(255, 209, 52, 67);
+  static const Color _textColor = Color(0xFF1A1A1A);
+
   TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -22,28 +26,42 @@ class _ProductListPageState extends State<ProductListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white, // Set scaffold background to white
       appBar: AppBar(
         title: const Text(
           'My Products',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
+          style: TextStyle(
+            fontWeight:
+                FontWeight.w600, // Slightly lighter weight for consistency
+            fontSize: 18, // Consistent font size
+            color: _textColor, // Custom text color
+          ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.grey[900],
+        backgroundColor: Colors.white, // AppBar background to white
+        foregroundColor: _textColor, // General foreground color for icons/text
+        elevation: 1, // Subtle elevation
       ),
       body: Column(
         children: [
           // --- Search Bar ---
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(16.0), // Increased padding
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search products...',
-                prefixIcon: Icon(Icons.search),
+                hintText: 'Search Products...',
+                hintStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
+                prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                filled: true,
+                fillColor: Colors.grey[100],
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 17,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide.none,
                 ),
               ),
               onChanged: (value) {
@@ -63,12 +81,17 @@ class _ProductListPageState extends State<ProductListPage> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: CircularProgressIndicator(color: _accentColor),
+                  ); // Custom color for indicator
                 }
 
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text('Something went wrong: ${snapshot.error}'),
+                    child: Text(
+                      'Something went wrong: ${snapshot.error}',
+                      style: const TextStyle(color: _textColor),
+                    ),
                   );
                 }
 
@@ -118,62 +141,27 @@ class _ProductListPageState extends State<ProductListPage> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                  ), // Consistent horizontal padding
                   itemCount: filteredProducts.length,
                   itemBuilder: (context, index) {
                     final product = filteredProducts[index];
-                    return SizedBox(
-                      height: 100,
+                    return Padding(
+                      padding: const EdgeInsets.only(
+                        bottom: 12.0,
+                      ), // Spacing between cards
                       child: Card(
-                        elevation: 2,
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 8.0,
-                          horizontal: 4.0,
-                        ),
+                        color: Colors.white, // Card background to white
+                        elevation: 0.5, // Subtle elevation
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: Colors.grey.shade200,
+                          ), // Subtle border
                         ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.all(12.0),
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8.0),
-                            child: product.imageUrl.isNotEmpty
-                                ? Image.network(
-                                    product.imageUrl,
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const Icon(
-                                              Icons.broken_image,
-                                              size: 60,
-                                            ),
-                                  )
-                                : Container(
-                                    width: 60,
-                                    height: 60,
-                                    color: Colors.grey[200],
-                                    child: const Icon(
-                                      Icons.image_not_supported,
-                                      size: 30,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                          ),
-                          title: Text(
-                            product.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(product.productId),
-                          trailing: Text(
-                            '\₹${product.price.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Colors.green[700],
-                            ),
-                          ),
+                        child: InkWell(
+                          // Use InkWell for tap effect
                           onTap: () {
                             Navigator.push(
                               context,
@@ -183,6 +171,89 @@ class _ProductListPageState extends State<ProductListPage> {
                               ),
                             );
                           },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(
+                              12.0,
+                            ), // Consistent padding inside card
+                            child: Row(
+                              children: [
+                                // Product Image
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  child: product.imageUrl.isNotEmpty
+                                      ? Image.network(
+                                          product.imageUrl,
+                                          width: 70, // Slightly larger image
+                                          height: 70, // Slightly larger image
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                                    width: 70,
+                                                    height: 70,
+                                                    color: Colors.grey[200],
+                                                    child: const Icon(
+                                                      Icons.broken_image,
+                                                      size: 35, // Adjusted size
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                        )
+                                      : Container(
+                                          width: 70,
+                                          height: 70,
+                                          color: Colors.grey[200],
+                                          child: const Icon(
+                                            Icons.image_not_supported,
+                                            size: 35, // Adjusted size
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Product Details
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        product.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: _textColor,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        product.productId,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Product Price
+                                Text(
+                                  '₹${product.price.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color:
+                                        _accentColor, // Custom color for price
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     );
@@ -200,7 +271,7 @@ class _ProductListPageState extends State<ProductListPage> {
             MaterialPageRoute(builder: (context) => ProductAddPage()),
           );
         },
-        backgroundColor: Color(0xFF1D4ED8),
+        backgroundColor: _accentColor, // Custom FAB color
         tooltip: 'Add Product',
         child: const Icon(Icons.add, color: Colors.white),
       ),

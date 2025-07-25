@@ -71,7 +71,7 @@ class OrderReport extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: 'Search Orders...',
                     hintStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    prefixIcon: Icon(Icons.search, color: Colors.blue),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
 
                     filled: true,
                     fillColor: Colors.grey[100],
@@ -82,10 +82,6 @@ class OrderReport extends StatelessWidget {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.blue, width: 2),
                     ),
                   ),
                   style: TextStyle(fontSize: 14, color: Colors.black),

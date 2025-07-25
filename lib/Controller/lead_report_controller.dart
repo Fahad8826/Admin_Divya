@@ -1126,7 +1126,7 @@ class LeadReportController extends GetxController {
         return Colors.red.shade100;
       case 'WARM':
         return Colors.orange.shade100;
-      case 'COLD':
+      case 'COOL':
         return Colors.blue.shade100;
       default:
         return Colors.grey.shade100;
@@ -1139,7 +1139,7 @@ class LeadReportController extends GetxController {
         return Colors.red.shade800;
       case 'WARM':
         return Colors.orange.shade800;
-      case 'COLD':
+      case 'COOL':
         return Colors.blue.shade800;
       default:
         return Colors.grey.shade800;
